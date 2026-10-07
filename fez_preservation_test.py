@@ -826,7 +826,7 @@ def ibm_zne_echo_fidelity(qc_ansatz, target_inv, meas_backend, shots, label,
 # ==============================================================================
 # PIPELINES & HARDWARE INTERFACE
 # ==============================================================================
-def get_ibm_service(token="5IYrwUNE5zyh64upXx-R_f9IrpGOnvjVsbhKpfnP81-L"):
+def get_ibm_service(token="YOUR TOKEN"):
     from qiskit_ibm_runtime import QiskitRuntimeService
     token = token or os.environ.get('IBMQ_TOKEN') or os.environ.get('IBM_QUANTUM_TOKEN')
     if token and token != "YOUR_API_KEY_HERE":
