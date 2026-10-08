@@ -1,0 +1,958 @@
+% ============================================================
+% NPJ Quantum Information — Main Manuscript Final Draft 12
+% Feedback-driven revision: theory-first abstract (<=220 words),
+% topological sparsification promoted to a theorem, finite-depth DLA
+% closure measurement foregrounded with a bipartite-parity reading,
+% matched-budget methodology and mitigation-compatibility elevated,
+% hardware reframed as a scoped single-path demonstration, "structural
+% well" pinned to the formal sublevel-set object of Definition 1,
+% Observation 1 promoted to a proved lemma, dangling Table 3 reference
+% corrected to the transfer-matrix figure, and threshold language
+% reconciled between the theorem (exact vanishing) and §8.1 (heuristic
+% choice of \tau_\kappa).
+% ============================================================
+% npj Quantum Information-style layout via revtex4-2:
+% full-width title/abstract/keywords on page 1, two-column body.
+\documentclass[twocolumn,aps,prl,superscriptaddress,showkeys]{revtex4-2}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\usepackage{color}
+\usepackage{physics}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{amsthm}
+\usepackage[font=small,labelfont=bf,labelsep=space]{caption}
+% distinctive serif font (Times-like), matching npj serif body
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+% Long verbatim paths in the data/code availability lists cannot break at
+% hyphens or slashes; allow the line breaker extra stretch so those
+% paragraphs set without overfull boxes.
+\setlength{\emergencystretch}{3em}
+
+% Left-aligned, numbered section/subsection headings with sub-numbering,
+% rendered in Title Case (standard journal look) instead of PRL all-caps.
+\usepackage{titlesec}
+\titleformat{\section}
+  {\raggedright\normalfont\Large\bfseries}
+  {\thesection.\quad}{0pt}{}
+\titleformat{\subsection}
+  {\raggedright\normalfont\large\bfseries}
+  {\thesubsection\quad}{0pt}{}
+\titleformat{\subsubsection}
+  {\raggedright\normalfont\normalsize\bfseries}
+  {\thesubsubsection\quad}{0pt}{}
+\titlespacing*{\section}{0pt}{1.5ex plus 0.7ex minus 0.3ex}{0.8ex}
+\titlespacing*{\subsection}{0pt}{1.2ex plus 0.5ex minus 0.2ex}{0.6ex}
+\titlespacing*{\subsubsection}{0pt}{1.0ex plus 0.4ex minus 0.2ex}{0.5ex}
+
+% revtex's prl style redefines section numbering AFTER the preamble; restore
+% clean arabic section / subsection / subsubsection numbering at begin-document.
+\AtBeginDocument{%
+  \renewcommand{\thesection}{\arabic{section}}%
+  \renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}%
+  \renewcommand{\thesubsubsection}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}%
+  \setcounter{secnumdepth}{3}%
+}
+
+% npj-style theorem heads via amsthm's note mechanism (Theorem 1 (Title).)
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{assumption}{Assumption}
+\newcommand{\observationname}{Observation}
+\newtheorem{observation}{Observation}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+% ---- macros ----
+\newcommand{\ibmfez}{\texttt{ibm\_fez}}
+\newcommand{\fakefez}{\texttt{FakeFez}}
+\newcommand{\fakemontreal}{\texttt{FakeMontrealV2}}
+\newcommand{\Usafe}{U_{\text{safe}}}
+\newcommand{\Mat}{\mathbb{C}^{d\times d}}
+\newcommand{\GL}{\mathrm{GL}(d,\mathbb{C})}
+\newcommand{\Unitary}{\mathsf{U}(d)}
+\begin{document}
+
+\title{Exploring Topology Optimization as a Framework for Noise-Aware Quantum Circuits through Geometric Wells in the Parameter Landscape}
+
+\author{Krishanu Karun, \textit{Junior Researcher}, Bloq Quantum}
+\date{September 2026}
+
+\begin{abstract}
+Near-term circuit design fixes topology by hand and keeps every gate unitary. We treat entangling edges as real-valued design variables, recover each block's unitary envelope by polar projection, and let a dual-MMA optimizer adjust intensities and timings together. We prove two structural results about the relaxed domain. Removal becomes well posed only when a block's operator-norm distance from the identity is used as the criterion (Proposition~\ref{prop:removal-cost}), and shrinking intensities alone provably cannot reach it (Proposition~\ref{prop:scalefree}); within the parametrization used here the deletion rule therefore cannot be an intensity threshold, and the identity-anchored block that does reach it is specified and held out of this study. We use the local member (LPTE) of the parametric Trotter expression (PTE) family, whose global (GPTE) and product (PPTE) forms bracket it on either side of the locality spectrum. On the LPTE chain the $3(N-1)$ per-pair $\{XX,YY,ZZ\}$ generators close to a Lie algebra of dimension one quarter of $\mathfrak{su}(2^N)$ up to parity constants, computed exactly through $N{=}8$. The framework reproducibly yields a structural well: a seed-distinct basin of the relaxed landscape that transfers across six noise models at $\eta=0.9943$. On an eight-qubit benchmark the relaxed family reaches $0.737\pm0.066$ density-matrix fidelity over ten seeds, where PPTE reaches $0.279$ and a three-layer hardware-efficient ansatz $0.329$, against an exact-preparation reference of $0.924$ at the same two-qubit gate budget; on a matched-budget variational benchmark it matches a hardware-efficient ansatz energetically but does not beat it, its remaining advantage being compatibility with error mitigation. On a live 156-qubit Heron r2 processor an 8-qubit instance reaches $28.83\%\pm3.94\%$ target-echo, $2.9\times$ the matched-budget baseline, and the improvement comes from design before execution rather than from post-processing. At 16 qubits the device ceiling takes over: the echo falls to $0.65\%$ while the optimizer still improves the simulated return probability by $383\times$, so the limit is set by the device, not by the search. The gain is a design variable with usable gradient structure, not a better benchmark score. The work sits within quantum information processing: it treats a parametrized circuit's expressivity, measured by the dimension of its dynamical Lie algebra, as something a designer can act on, and it asks how near-term circuits behave when structure and noise are treated together. The framework is developed in theory and simulation; hardware is used only to test whether the resulting structural well survives on a real device.
+\end{abstract}
+
+\keywords{topology optimization, quantum circuits, structural optimization, polar projection, parametric Trotter expression, error mitigation}
+
+\maketitle
+
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+% ============================================================
+
+A quantum computation is a sequence of gates, and on near-term hardware every gate is an opportunity for error. Depolarizing and damping channels erode the state, readout corrupts the output statistics, and coherence windows bound the total circuit time; variational algorithms must therefore execute complex operations within strict depth budgets~\cite{Preskill2018,Kim2023}. The conventional response is not to redesign the circuit but to keep it and edit the measurement statistics afterwards. Zero-noise extrapolation~\cite{Temme2017,Kandala2019}, Clifford data regression~\cite{Czarnik2021}, and virtual distillation~\cite{Huggins2021} all act after the gates have run---they stretch, fit, or distill. None of them alters which entangling edges are present in the compiled circuit, and a near-zero intensity that nobody deleted still becomes a physical CNOT.
+
+We take the other direction. This paper is explicitly about the \emph{alternative direction} that classical structural optimization opened and that circuit design has not yet taken: rather than committing to a discrete description of the design and then repairing its consequences, keep the description continuous for as long as possible and let the optimizer decide, in the limit, what to remove.
+
+\subsection{Topology optimization and the relaxation that made it work}
+
+In structural optimization, topology is not a modelling convenience but the primary unknown. The question is not how much material to use but \emph{where} to put it, and the decisive methodological step was to refuse to answer that question discretely. A binary presence/absence flag per element cannot carry a gradient, so the flag is relaxed to a real-valued density, the structure is solved in the continuous domain, and material is removed where the density converges to zero~\cite{Svanberg1987}. The method of moving asymptotes then solves the resulting sequence of convex subproblems with asymptotic bounds, and the penalization that keeps intermediate densities out of the optimum is supplied by the compliance objective and its power law~\cite{Boyd2004}.
+
+The correspondence here is explanatory before it is generative. This work began from an observation: a continuous relaxation of entangling edges settles, reproducibly across seeds, into a stable basin of the noise-deformed landscape. The structural-optimization picture was recognized afterwards, as the reason the relaxation behaves as it does and as the guide to what its topology can express. We take the step and measure how far the direction carries; we do not claim the theory is closed.
+
+Three features of that recipe transfer directly to circuits, and they organize the rest of this paper:
+
+\begin{itemize}
+\item \textbf{A density variable on each element.} In TOPAZ the element is an entangling pair and its density is the total intensity $\kappa(p)$ carried by that pair. The design variable that classical topology optimization calls $\rho$ is a real number the optimizer moves by gradient, not a flag.
+\item \textbf{Retraction onto the feasible set.} A relaxed structural variable is mapped back onto physically realizable configurations by a projection---in our case the polar factor, which returns each non-unitary block to its nearest unitary operator. This is the direct analogue of projecting onto a feasible structure, and it is the component that makes the relaxed landscape navigable (\S\ref{sec:ablation}).
+\item \textbf{Removal as a measurable quantity, not a guess.} A correctly posed relaxation makes an edge's contribution to the objective measurable, and we bound what deleting that edge costs rather than assuming it is free. Whether the criterion is actually met must be measured, and we measure it (\S\ref{sec:pruning}).
+\end{itemize}
+
+We emphasize that the debt here is one of direction, not of method. TOPAZ applies neither SIMP's power-law penalization of intermediate densities nor a compliance objective; it applies an explicit intensity threshold, a polar retraction, and a dual-MMA optimizer. What it shares with topology optimization is the thesis that \emph{continuity in the structural description is what makes removal possible}.
+
+\subsection{The circuit object}
+
+The engine is the \emph{local parametric Trotter expression} (LPTE; Definition~\ref{def:lpte}). On an $N$-qubit linear chain, each nearest-neighbour pair $p=(i,i{+}1)$ carries a sum of three Pauli rotations,
+\begin{equation}
+B_p(\rho,\tau) \;=\; \sum_{P\in\{XX,YY,ZZ\}} r_{p,P}\, e^{-iP\,\delta\,\tau_{p,P}},
+\label{eq:lpte-pair}
+\end{equation}
+with intensities $r_{p,P}\in[0,1]$ and timings $\tau_{p,P}\in[0,\tau_{\max}]$. The $3(N-1)$ weights are normalized once, globally, by softmax: the optimizer works with unconstrained $\tilde\rho$ and sets $r_j=\exp(\tilde\rho_j)/\sum_{j'}\exp(\tilde\rho_{j'})$, so $\sum_j r_j=1$ without projection. The per-pair density $\kappa(p)=\sum_P r_{p,P}$ is then the pair's share of that global weight. Each block is non-unitary; it is projected to its nearest unitary by the polar factor
+\begin{equation}
+\mathcal{P}_{\mathrm{U}}(A) = A\,(A^\dagger A)^{-1/2},
+\label{eq:polar}
+\end{equation}
+and the circuit is the ordered product of the per-pair unitaries. Because the relaxation is continuous, gradients flow while an edge's intensity is being moved---something a strictly unitary ansatz cannot do, because there a slot collapses to the identity only at the discrete boundary $\rho_j=0$.
+
+\subsection{What this paper claims}
+
+TOPAZ is a framework; LPTE is one ansatz it can host. That distinction matters when results are compared, and it is the reason we compare LPTE and not ``TOPAZ'' against a hardware-efficient ansatz (HEA). This paper instantiates the framework once and measures how far the direction carries before it needs work this study does not attempt.
+
+\begin{itemize}
+\item \textbf{We do claim a structural result.} The relaxed domain has four provable topological invariants (\S\ref{sec:invariants}), and the cost of deleting an edge is bounded exactly by how far that edge's unitary sits from the identity (\S\ref{sec:sparsification}). The same section proves this criterion cannot be met by shrinking intensities, which is what makes the identity-anchored block necessary rather than optional. This is the formal core of the paper: topology becomes a variable the optimizer can move, and removal becomes a measurable quantity rather than a choice made at construction.
+\item \textbf{We claim the landscape transfers.} The structural well is seed-distinct and survives a change of noise model (\S\ref{sec:transfer}), which is the result we would defend first.
+\item \textbf{We do claim that relaxation buys search.} The polar retraction is what makes the relaxed landscape navigable, and removing it costs more than half the fidelity (\S\ref{sec:ablation}).
+\item \textbf{We measure the pruning rule rather than asserting it.} At the registered operating point the intensity threshold does not fire: all seven edges of the 8-qubit chain survive. The rule activates as soon as the threshold clears the weight-sharing floor, so what we report is an operating point rather than a failure of the mechanism (\S\ref{sec:pruning}). We explain the inactive operating point and specify the parametrization change the proof requires, which this study does not implement.
+\item \textbf{We do not claim better variational energies.} On a matched-budget benchmark (\S\ref{sec:vqe-matched}) the hardware-efficient ansatz reaches equal or lower energies than LPTE. We report this plainly.
+\end{itemize}
+
+% ============================================================
+\section{Continuous relaxation of circuit topology}
+\label{sec:relaxation}
+% ============================================================
+
+\subsection{Ambient space and polar projection}
+
+Standard circuits operate in $\Unitary=\{U\in\Mat: U^\dagger U=I\}$, a compact Lie group of dimension $d^2$ with $d=2^N$. A continuous circuit operator $A(\boldsymbol{\lambda})$ maps $\mathbb{R}^M\to\Mat$ without the unitarity constraint, so gradients can flow around barriers that would block a strictly unitary optimizer. Every invertible $A\in\GL$ decomposes uniquely as $A=QP$ with $Q$ unitary and $P=(A^\dagger A)^{1/2}$ positive definite~\cite[Sec.~8.1]{Golub2013}; the polar factor $Q$ is the closest unitary to $A$ in the Frobenius norm. Pinning singular values to unity smooths the loss landscape and stabilizes gradients.
+
+Two facts about the projection matter downstream, and we state them precisely here because the local convexity claim of \S\ref{sec:convexity} depends on the first and the pruning claim of \S\ref{sec:pruning} depends on the second.
+
+First, the polar factor responds to some perturbations and not others.
+
+\begin{lemma}[Radial perturbations do not rotate the polar factor]
+\label{lem:frechet}
+Let $B=QP$ be the polar decomposition of an invertible operator, with $Q$ unitary and $P$ Hermitian positive definite. Under a radial (stretching) perturbation $\delta B=\varepsilon B$ with $1+\varepsilon>0$, the polar factor does not rotate: $\delta Q=0$ and only $P$ is rescaled.
+\end{lemma}
+\begin{proof}
+Because $B+\delta B=(1+\varepsilon)B=Q\,(1+\varepsilon)P$, and $(1+\varepsilon)P$ is again Hermitian positive definite while $Q$ remains unitary, $B+\delta B$ has $\bigl(Q,\,(1+\varepsilon)P\bigr)$ as an admissible polar decomposition. Uniqueness of the polar factor then forces the unitary part of $B+\delta B$ to be the same $Q$, so $\delta Q=0$.
+\end{proof}
+
+\begin{remark}[General perturbations do rotate $Q$]
+\label{rem:frechet-gen}
+For a general perturbation $\delta B$, the polar factor does rotate. Differentiating $B=QP$ gives $\delta B=\delta Q\,P+Q\,\delta P$ with $\delta P$ the Fr\'echet derivative of $P=(B^\dagger B)^{1/2}$, and $\delta Q$ solves the Sylvester equation
+$$\delta Q\,P+Q\,\delta P=\delta B,\qquad \delta P=\mathcal{L}_{(B^\dagger B)^{1/2}}\!\bigl(\delta B^\dagger B+B^\dagger\delta B\bigr),$$
+where $\mathcal{L}_{(\cdot)}$ is the Fr\'echet derivative of the matrix square root. In general $\delta Q\neq 0$; the rotation vanishes only for perturbations that respect the polar factorization as above. The regularizer of Eq.~\eqref{eq:reg} acts precisely by radially rescaling the symmetric factor $P$ toward $I$, so the relevant projection mode is the radial one.
+\end{remark}
+
+Second, the projection is defined only off the singular set. In LPTE each per-pair weight is floored at $\max(\rho,10^{-6})$, and the smallest singular value realized across all saved 8-qubit runs is $\sigma_{\min}\approx4\times10^{-4}$. This is an observed bound, not a guarantee: degenerate weight combinations can produce a singular block, and we give an explicit one---weights $(\tfrac12,\tfrac14,\tfrac14)$ at $\varphi=\pi/2$ give $\sigma_{\min}=0$. Everywhere else the polar factor is obtained from the SVD of $B$, unique and deterministic on the active block. Throughout, $\rho$ denotes the optimizer's intensity vector while density matrices are written $\sigma$; the two roles are kept symbolically distinct, which is why the tensor-dot engine of \S\ref{sec:applications} uses $\sigma$ for its input state.
+
+\subsection{The LPTE block family}
+
+\begin{definition}[Local parametric Trotter expression]
+\label{def:lpte}
+On an $N$-qubit linear chain, each nearest-neighbour pair $p=(i,i{+}1)$ carries the block $B_p(\rho,\tau)$ of Eq.~\eqref{eq:lpte-pair}: a sum of three Pauli rotations with intensity $r_{p,P}$ and timing $\tau_{p,P}$. Each block is projected to its nearest unitary, $U_p=\mathcal P_{\mathrm U}(B_p)$, and the circuit is the ordered product $U_{\mathrm{LPTE}}=\prod_p U_p$. The entangling graph is the chain itself, and the density $\kappa(p)=\sum_P r_{p,P}$ is the design variable the optimizer drives toward zero.
+\end{definition}
+
+Three formulations of the same \emph{parametric Trotter expression} (PTE) family span the locality spectrum: global PTE (GPTE), product PTE (PPTE), and local PTE (LPTE). The contrast between them is what makes the relaxation necessary.
+
+\paragraph{Global PTE (GPTE).}
+The full sum $B=\sum_j\rho_j e^{-iH_j\delta\tau_j}$ is mathematically unconstrained but computationally expensive: each polar decomposition step requires an $O(d^3)$ matrix inversion with $d=2^N$, giving $O(2^{3N})$ per evaluation. Its 8-qubit inversion test registers $0.004$, at the $1/256$ noise floor. GPTE was not used for the headline experiments.
+
+\paragraph{Product PTE (PPTE).}
+Enforcing a term-by-term Trotter product, $U_{\mathrm{circ}}=\prod_j e^{-i\rho_j H_j\delta\tau_j}$, restores hardware compilation. On 8 qubits with $M=21$ nearest-neighbour Pauli terms it compiles to 8 two-qubit gates and reaches density-matrix fidelity $0.6329$ under \fakefez---a $2.5\times$ gain over the random-initialization mean ($0.2497$, 5 seeds). But every factor is unitary by construction: at every non-zero angle a Trotter slot remains a full two-qubit rotation, so there is no bounded intensity variable the optimizer can carry continuously to zero. A slot collapses to the identity only at the discrete boundary $\rho_j=0$, and the 21-to-8 reduction is then realized by the transpiler's term-merging rather than by optimization. PPTE therefore has no optimization-driven pruning mechanism.
+
+\paragraph{Local PTE (LPTE).}
+On 8 qubits with 7 pairs and 3 Pauli terms per pair, LPTE uses $21$ two-qubit gates and $42$ parameters---the same parameter count as PPTE but $2.6\times$ the gate count. The difference that matters is that the per-pair SVD projection lets the optimizer set each pair's intensity independently, so it can discover which pairs carry the noise-resilience behaviour while letting others fall toward zero. Whether that happens at a given operating point is an empirical question, and \S\ref{sec:pruning} answers it for ours.
+
+\paragraph{Gate-count convention.}
+Throughout, a ``two-qubit gate'' denotes a native entangling gate (ECR on \ibmfez, CNOT on \fakefez) counted after transpilation; single-qubit rotations are excluded. All circuits were transpiled with Qiskit \texttt{optimization\_level=3} onto the device native-gate basis. The reduction from 21 abstract Pauli terms to 8 native entangling gates is specific to that transpiler, and we do not treat it as an optimization result.
+
+\subsection{The \texorpdfstring{$\pi/2$}{pi/2} timing cluster is a SWAP identity}
+
+For a single Pauli rotation the maximum entangling power occurs at $\tau=\pi/4$, yet the optimizer consistently clusters timings at $\tau\approx\pi/2$ (Fig.~\ref{fig:pi2-hist}). The following lemma shows why this is benign.
+
+\begin{lemma}[The \texorpdfstring{$\pi/2$}{pi/2} cluster is a SWAP identity]
+\label{lem:swap}
+For a local block $B(\tau)=e^{-i\tau XX}+e^{-i\tau YY}+e^{-i\tau ZZ}$, at $\tau=\pi/2$, $B=-i(XX+YY+ZZ)$. With $XX+YY+ZZ=2\,\mathsf{SWAP}-I$, spectral decomposition gives eigenvalues $-i$ (symmetric) and $+3i$ (antisymmetric), so $B^\dagger B$ has eigenvalues $1$ and $9$. The polar projection $(B^\dagger B)^{-1/2}$ scales the symmetric subspace by $1$ and the antisymmetric by $1/3$, yielding a $U$ with eigenvalues $-i$ and $+i$: exactly $-i\,\mathsf{SWAP}$. At $\tau=\pi/2$ the block sum plus polar projection deterministically produces the permutation operator $\mathsf{SWAP}$ (up to global phase), a fixed point the optimizer discovers rather than one the ansatz imposes.
+\end{lemma}
+
+A hardware-efficient ansatz can also contain SWAP-like layers, so their presence is not newsworthy on its own. Two features distinguish this cluster. First, it is a \emph{discovered} attractor: the optimizer is initialized away from $\tau=\pi/2$ and pulled there by the objective, which contains no SWAP or entangling-power term. Second, TOPAZ applies selective pressure at the level of individual terms---across ten seeds the number of Pauli terms still above the activity threshold is $6$--$14$, mean $9.2$ of $21$---so the optimizer concentrates on a subset of the chain and leaves the rest inactive. The distinction is important and we draw it explicitly in \S\ref{sec:pruning}: the selection observed here is \emph{term-level}, not realized edge removal.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig2_pi2_hist.png}
+\caption{Distribution of optimized timings $\tau$ across the LPTE benchmark seeds. Dashed line: $\tau=\pi/2$, where the block of Lemma~\ref{lem:swap} projects to a SWAP operator.}
+\label{fig:pi2-hist}
+\end{figure}
+
+\subsection{Objectives and optimizer}
+\label{sec:objectives}
+
+The optimizer minimizes either a noisy operator-overlap loss,
+\begin{equation}
+L_{\mathrm{op}}(\rho,\tau)=1-\frac{1}{d^2}\bigl|\mathrm{Tr}\bigl(U_{\mathrm{target}}^\dagger\Usafe(\rho,\tau)\bigr)\bigr|^2,
+\label{eq:op-loss}
+\end{equation}
+or, for a target state, the state-fidelity loss $L_{\mathrm{st}}(\rho,\tau)=1-|\langle\psi_{\mathrm{target}}|\Usafe(\rho,\tau)|\psi_0\rangle|^2$. A regularizer keeps the pre-projection operator close to unitarity:
+\begin{equation}
+L(\rho,\tau)=L_{\mathrm{prim}}(\rho,\tau)+\lambda\sum_{k=1}^{L}\norm{B_k^\dagger B_k-I}_F^2,\qquad \lambda=10^{-3}.
+\label{eq:reg}
+\end{equation}
+
+The optimizer is a dual instance of the method of moving asymptotes~\cite{Svanberg1987,Boyd2004}, one per parameter class, because $\rho$ and $\tau$ differ by roughly four orders of magnitude in finite-difference step size ($\epsilon_\rho=10^{-4}$ versus $\epsilon_\tau=\pi/4$); a single shared move-limit budget misallocates updates. Each instance keeps its own asymptote, move limit, and momentum state, with momentum-smoothed gradient
+
+The coarse $\epsilon_\tau$ is a measured error rather than a safe approximation, and we report what it costs. The Pauli parameter-shift rule does not transfer to the polar-rectracted block, so we compared the $\pi/4$ estimate against a $\pi/256$ reference. For PPTE the estimate is low by a constant factor $0.637$ with zero sign changes in $43$ instances---a pure rescaling that the scale-adaptive MMA step absorbs, leaving that baseline unaffected. For LPTE it is \emph{not} a rescaling: the median ratio is $0.795$, the interdecile range runs $0.03$--$1.80$, and $5$ of $57$ instances ($\approx9\%$) return a component with the wrong sign. That test used $12$ terms against the benchmark's $21$, so it neither bounds nor is bounded by the full-benchmark rate. Two consequences follow. Every reported fidelity is a direct objective evaluation rather than a gradient-derived quantity, so a biased gradient steers the search without corrupting the value. But because the error is not a pure rescaling, we do not claim the timing-step choice leaves our numbers unchanged: a biased gradient can also alter which local optimum the search settles into.
+\begin{equation}
+\nabla_{\mathrm{smooth}}=\alpha\,\nabla_{\mathrm{cur}}+(1-\alpha)\,\nabla_{\mathrm{prev}},\qquad \alpha=0.4.
+\label{eq:momentum}
+\end{equation}
+Convergence is preserved because the subspaces are updated alternately against shared objective evaluations. When a target algorithm carries an extra parameter class, such as VQE rotation angles, TOPAZ wraps a second MMA module around its own small ansatz and alternates the two.
+
+\subsection{Scope of the topological reading}
+
+The vocabulary this paper uses (density variables, retraction, removal as a consequence) is developed here from the circuit-design problem, and everything claimed below is established within circuit design. We claim no formal topological invariance result for physical circuits, and no conclusion in this paper depends on one. Where we use the word \emph{topological} we mean one of two precise things: the \emph{topology of the design}, meaning which entangling edges are present and how their intensities behave (\S\ref{sec:invariants}), or the \emph{topology of the objective landscape}, meaning the sublevel-set structure of \S\ref{sec:well}. We do not use it to mean anything about the entanglement structure of the states the circuits prepare.
+
+% ============================================================
+\section{Four topological invariants of the relaxed design domain}
+\label{sec:invariants}
+% ============================================================
+
+Topology optimization needs the relaxed domain to be well behaved, or the continuity that justifies relaxation buys pathologies instead of accessibility. This section establishes the four properties the rest of the paper relies on, each with a proof, and separates them carefully from the things they do not imply.
+
+\begin{definition}[Relaxed design domain and structural well]
+\label{def:well}
+The optimization domain is $\mathcal{X}=[0,1]^M\times[0,\tau_{\max}]^M$, where $M$ is the number of entangling pairs, and the loss is $L:\mathcal{X}\to\mathbb{R}$. A \emph{sublevel set} is $S_c(L)=\{(\rho,\tau)\mid L(\rho,\tau)\le c\}$. A \emph{structural well} is a connected component $B$ of $S_c(L)$ containing a local minimum $x^*$ with $\nabla L(x^*)=0$ and $\nabla^2 L(x^*)\succ 0$. We collect these basins as $\mathcal{W}$. All quantitative statements about a well (curvature bands, effective rank, basin volume) are \emph{measurements} of this formal object, reported as data in \S\ref{sec:canyon}, not theorems.
+\end{definition}
+
+\subsection{Compactness}
+
+\begin{lemma}[Compactness and attainment]
+\label{lem:compact}
+The relaxed design domain $\mathcal{X}$ of Definition~\ref{def:well} is compact. For $\delta,\eta>0$ let
+\[
+\mathcal{X}_{\delta,\eta}=\{(\rho,\tau)\in\mathcal{X}:\ \rho_i\ge\delta\ \forall i,\ \ \sigma_{\min}(B_p)\ge\eta\ \forall p\}.
+\]
+Then $\mathcal{X}_{\delta,\eta}$ is compact, $L$ is continuous on $\mathcal{X}_{\delta,\eta}$, and $L$ attains a global minimum on $\mathcal{X}_{\delta,\eta}$.
+\end{lemma}
+\begin{proof}
+$\mathcal{X}$ is a Cartesian product of closed and bounded intervals, hence closed and bounded in $\mathbb{R}^{2M}$. By Heine--Borel it is compact. The inequalities $\rho_i\ge\delta$ and $\sigma_{\min}(B_p)\ge\eta$ are closed conditions---$\sigma_{\min}$ is continuous in the entries of $B_p$---so $\mathcal{X}_{\delta,\eta}$ is closed in $\mathcal{X}$ and hence compact. By construction it lies inside the non-singular locus, so $L$ is continuous on it by Lemma~\ref{lem:continuous}. The extreme value theorem then gives a minimizer on $\mathcal{X}_{\delta,\eta}$.
+\end{proof}
+
+Why there are two margins rather than one. Continuity of $L$ is established only on the non-singular locus, and that locus is open, so the extreme value theorem cannot be applied to it directly; a closed subset contained in it is what the theorem needs. The weight floor supplies the first margin, $\delta=10^{-6}$ in every run we report. It supplies nothing toward the second, and the distinction matters: as \S\ref{sec:relaxation} records, the coefficients $(\tfrac12,\tfrac14,\tfrac14)$ at $\varphi=\pi/2$ are all above $1/4$ and yet $\sigma_{\min}=0$. Positivity of the coefficients excludes no cancellation, because the four parity sectors of a block can cancel while every weight stays positive. Reading $\rho_i\ge\delta$ as a guarantee that $B_p$ is invertible would therefore be false, and the statement above does not read it that way. Across the saved 8-qubit runs $\sigma_{\min}\approx4\times10^{-4}$, so any $\eta\le4\times10^{-4}$ places those runs inside the subdomain where the minimizer is claimed---an observed margin, not a guaranteed one. A formulation that removed the floor would additionally have to argue attainment on an open set, which continuity alone does not give.
+
+Compactness guarantees that a global minimum \emph{exists}. It says nothing about how many minima there are or whether an optimizer finds them. Remark~\ref{rem:obs-wells} returns to this.
+
+\subsection{Continuity}
+
+\begin{lemma}[Continuity of the relaxed objective]
+\label{lem:continuous}
+Let $B_p(\rho,\tau)$ be a block of Eq.~\eqref{eq:lpte-pair} and $A\mapsto A(A^\dagger A)^{-1/2}$ the polar projection of Eq.~\eqref{eq:polar}. Then the losses of \S\ref{sec:objectives} are continuous in $(\rho,\tau)$ at every point where every block $B_p$ is invertible.
+\end{lemma}
+\begin{proof}
+Each $B_p$ is a finite sum of unitaries whose coefficients depend continuously on $(\rho,\tau)$, and $(B,\tau)\mapsto\exp(-iP\,\delta\,\tau)$ is continuous, so $(\rho,\tau)\mapsto B_p(\rho,\tau)$ is continuous. Hence $B_p^\dagger B_p$ is continuous in $(\rho,\tau)$. The matrix square root is continuous on the positive-definite cone, and inversion is continuous on the nonsingular matrices, so $B_p\mapsto\mathcal P_{\mathrm U}(B_p)$ is continuous in $B_p$; consequently $U_p(\rho,\tau)$ is continuous. Finite products of continuous maps are continuous, so $U_{\mathrm{LPTE}}(\rho,\tau)$ is continuous in $(\rho,\tau)$. Finally, the maps $\Usafe\mapsto|\mathrm{Tr}(\Usafe^\dagger U_{\mathrm{target}})|^2$ and $\Usafe\mapsto|\langle\psi|\Usafe|\psi\rangle|^2$ are continuous in $\Usafe$, being moduli of continuous inner products. Composing gives continuity of both losses.
+\end{proof}
+
+The hypothesis is doing real work and we do not hide it. The polar projection is undefined at a singular block, so the domain of the relaxed objective is the non-singular locus
+\[
+\mathcal{X}_{\mathrm{ns}}=\{(\rho,\tau)\in\mathcal{X}:\ \lambda_{\min}(B_p^\dagger B_p)>0\ \text{for all } p\},
+\]
+which is an open subset of $\mathcal{X}$. Two consequences follow. First, attainment in Lemma~\ref{lem:compact} is claimed on the closed subset $\mathcal{X}_{\delta,\eta}$ rather than on $\mathcal{X}_{\mathrm{ns}}$, because $\mathcal{X}_{\mathrm{ns}}$ is open and so is not available to the extreme value theorem; it is the second margin $\eta$, not the weight floor, that makes the subdomain closed. Second, the singular set is precisely where the relaxed problem is not well posed, so avoiding it is a requirement rather than a happy accident. The floor and the measured margin are what keep the reported runs clear of it, and that margin is measured rather than guaranteed---which is why Lemma~\ref{lem:compact} states it as a hypothesis instead of deriving it. A formulation that removed the floor would have to treat the singular set explicitly.
+
+\subsection{Connectedness}
+
+\begin{lemma}[Connectedness and path-connectedness]
+\label{lem:connected}
+The domain $\mathcal{X}$ is convex and therefore path-connected; every sublevel set $S_c(L)\cap\mathcal{X}_{\delta,\eta}$ is compact whenever $\mathcal{X}_{\delta,\eta}$ is non-empty; and the image of any path-connected set under $(\rho,\tau)\mapsto U_{\mathrm{LPTE}}(\rho,\tau)$ is path-connected.
+\end{lemma}
+\begin{proof}
+$\mathcal{X}$ is a product of intervals and hence convex; convexity implies path-connectedness. For the sublevel set, Lemma~\ref{lem:compact} gives that $\mathcal{X}_{\delta,\eta}$ is compact and that $L$ is continuous on it, so $S_c(L)\cap\mathcal{X}_{\delta,\eta}$ is closed in $\mathcal{X}_{\delta,\eta}$ and therefore compact. Finally the image of a path-connected set under a continuous map is path-connected.
+\end{proof}
+
+We draw the reader's attention to what this lemma does and does not give. The search space the optimizer traverses is the box $\mathcal{X}$ under the weight floor, an intersection of convex constraints and hence convex and path-connected, so a gradient-based optimizer is not blocked by disconnected basins. Lemma~\ref{lem:compact} invokes the closed subdomain $\mathcal{X}_{\delta,\eta}$ to secure the existence of a minimizer and for no other purpose: that subset is cut out by $\sigma_{\min}\ge\eta$, is not convex, and we claim no connectivity for it. The lemma also gives nothing about the connectivity of a single sublevel set $S_c(L)$: a sublevel set of a continuous function on a convex domain may have any number of connected components, and the number of components of $S_c(L)$ is precisely the number of wells at that level. Connectivity of the domain and multiplicity of wells are separate facts, and we keep them separate.
+
+\begin{remark}[Wells are observed, not derived]
+\label{rem:obs-wells}
+Lemma~\ref{lem:compact} guarantees that $L$ attains a global minimum on $\mathcal{X}_{\delta,\eta}$. It says nothing about how many basins exist. That the landscape hosts multiple wells is an experimental observation (different seeds converge to different floors), and it is measured, not derived, in \S\ref{sec:well}. Different seeds land in different wells because each freezes a different sparse subset of parameters.
+\end{remark}
+
+\subsection{Local convexity}
+\label{sec:convexity}
+
+Compactness, continuity, and connectedness are properties of the domain and of the objective's regularity. Local convexity is a stronger claim, and the regularizer is what makes it available.
+
+\begin{proposition}[Regularizer-induced local convexity]
+\label{prop:convexity}
+Let $L_{\mathrm{prim}}$ be $C^2$ at a stationary point $x^*$ and suppose the residual $\norm{B_k^\dagger B_k-I}_F^2$ is $C^2$ in a neighbourhood of $x^*$. Then the Hessian of the regularized loss $L$ of Eq.~\eqref{eq:reg} satisfies
+\[
+\nabla^2 L(x^*)=\nabla^2 L_{\mathrm{prim}}(x^*)+\lambda\sum_k \nabla^2\!\bigl(\norm{B_k^\dagger B_k-I}_F^2\bigr)(x^*),
+\]
+the second term being positive semidefinite; and if the sum is strictly positive definite then $x^*$ is a strict local minimum of $L$ and belongs to exactly one well of Definition~\ref{def:well}.
+\end{proposition}
+\begin{proof}
+For any real vector $v$ and each $k$, let $J_k$ be the Jacobian of the map $x\mapsto B_k(x)$, so the residual is the squared Frobenius norm of the smooth map $h_k(x)=B_k^\dagger B_k-I$. The product rule gives
+\[
+v^\top\nabla^2(h_k^\top h_k)(x)v
+=2\,\norm{J_k(x)v}_F^2+2\,h_k(x)^\top \nabla^2 h_k(x)\,v.
+\]
+The first term is nonneg for all $v$, so $\nabla^2(h_k^\top h_k)$ is positive semidefinite; a sum of such matrices scaled by $\lambda>0$ is positive semidefinite. Adding it to $\nabla^2 L_{\mathrm{prim}}$ gives the displayed identity. By the second-derivative sufficient condition for a strict local minimum of a $C^2$ function, strict positive definiteness of the sum implies that $x^*$ is a strict local minimum. Since $x^*$ is then a strict local minimum with positive curvature, the connected component of $S_{L(x^*)}(L)$ containing $x^*$ satisfies Definition~\ref{def:well}, and strict local minimality places $x^*$ in that component alone.
+\end{proof}
+
+Two honest qualifications, both of which we resolve by measurement rather than by argument.
+
+First, the proposition is a sufficient condition, not a theorem that the condition holds. The regularizer term is positive semidefinite, so it can remove negative curvature and contribute positive curvature, but on its own it cannot turn a saddle into a minimum: it contributes zero in directions where the residual is already stationary. Strictness has to come from $L_{\mathrm{prim}}$.
+
+Second, and consequently, \textbf{local convexity is a measured property of the discovered optimum, not a proved property of the ansatz}. We measure it directly. The Hessian of the loss at the converged point on the full $42$-parameter problem has a participation-ratio effective rank of $3.12$, with the spectrum concentrated on eight directions. Restricted to the two parameter blocks, the intensity subspace is uniformly stiff but not degenerate---eigenvalues $1.67\times10^3$, $7.76\times10^2$, $6.29\times10^2$, $4.07\times10^2$, mean $\sim\!8.7\times10^2$, spanning a factor of $4.1$, effective rank $3.07$---while the timing subspace has one stiff direction riding a ladder of soft ones, effective rank $1.01$. The measured spectrum is therefore positive definite, consistent with Proposition~\ref{prop:convexity}, and low rank: the well is a narrow valley embedded in larger plateau structure, with $\lambda_{\min}(\nabla^2 L)=0$ at the basin boundary, marking the transition out of the well.
+
+\subsection{An applicability check: Grover's algorithm}
+
+These four invariants are not decorative. They are the conditions a target algorithm's landscape must satisfy for continuous relaxation to be worth applying, so it is worth asking which candidate algorithms satisfy them. Variational eigenvalue solving, variational quantum simulation, QAOA, and Hamiltonian variational ans\"atze all satisfy all four: their domains are compact boxes, their objectives are continuous on the non-singular locus, their domains are convex, and near a stationary point their Hessians are positive definite on the low-dimensional subspace the optimizer actually explores.
+
+Grover's algorithm is instructive because it is a case where the check is worth running explicitly. Its amplitude-amplification landscape is a continuous trigonometric function of the control angles, so \emph{continuity} holds, and the compactness and connectedness of the angle domain hold as well. What fails is the fourth condition. The optimum of an amplitude-amplification objective is not an isolated point: it is a continuous manifold of global minimizers, equivalently a continuum of symmetry-equivalent schedules achieving the same optimal success probability. Strict positive definiteness of $\nabla^2 L$ therefore fails on a whole manifold, the strict-local-minimum clause of Definition~\ref{def:well} is not satisfied, and the basin structure that Proposition~\ref{prop:convexity} depends on degenerates into a flat ridge. This is the sense in which a topology-optimization relaxation is not the right tool there: there is no discrete question of which components to keep, because the optimum is already maximally indifferent among them.
+
+\subsection{Finite-depth block algebra}
+
+The reachable set of an ansatz is determined by the Dynamical Lie Algebra (DLA) of its generators~\cite{Sim2019}. Without entanglement, local Pauli generators commute across qubit boundaries and the closure has dimension only $3N$. An entangling generator such as $X_1X_2$ breaks this: cross-pair commutators such as $[X_1X_2,Y_2Y_3]=2i\,X_1Z_2Y_3$ generate new non-local strings, and a generic hardware-efficient ansatz mixing local and non-local generators closes rapidly to $\mathfrak{su}(2^N)$ (dimension $4^N-1$), a growth associated with barren plateaus~\cite{Holmes2022}.
+
+For the LPTE chain we require a finite-depth characterization, not an asymptotic closure theorem. Each block carries $\{XX,YY,ZZ\}$, which is Abelian ($[XX,YY]=[YY,ZZ]=[ZZ,XX]=0$ exactly), so a single block closes to a three-dimensional Abelian algebra rather than to $\mathfrak{su}(2)$. The exchange algebra is recovered from the same Pauli support only after adding the off-diagonal generator $(XY-YX)/2$, which lies outside the block's span. We therefore describe the block as contributing three local directions and make no claim that they form a non-Abelian subalgebra. A 7-pair chain starts from seven such blocks, $21$ local directions, before cross-pair commutators begin building longer non-local strings.
+
+This is consistent with the measured geometry at the converged point: the stiffness concentrates in a handful of directions (effective rank $3.12$; the two-band curvature structure of \S\ref{sec:canyon}). The Hessian measurements are consistency checks with this picture, not proofs. We attach no claim about the asymptotic closure of the chained algebra, and whether block-restricted growth delays $\mathfrak{su}(2^N)$ saturation is left open; the \emph{measured} finite-$N$ closure is reported as data in \S\ref{sec:scaling-meas}.% ============================================================
+\section{Sparsification: the exact statement and its measured threshold}
+\label{sec:sparsification}
+% ============================================================
+
+This section states what relaxation does and does not buy for edge removal, proves the part that can be proved, and then, separately, measures the thresholded rule that a practitioner would build on top of it. The proof and the measurement live at different scales, and conflating them is the most common error in this kind of method, so we keep them apart.
+
+\subsection{The removal-cost statement}
+
+The LPTE ansatz defines an entangling graph $G_{\mathrm{LPTE}}(\rho,\tau)=(V,E)$ whose edge $p$ carries density $\kappa(p)=\sum_P r_{p,P}$. The intended pruning protocol has three stages: solve $\min_{\rho,\tau}L(\rho,\tau)$ on the full edge set; remove pairs with $\kappa(p)<\tau_\kappa$; re-optimize on the reduced domain from fresh restarts.
+
+What the relaxation can be held to is a statement about the \emph{cost} of deleting an edge, and the hypothesis has to be about the block's rotation rather than about a gradient. We therefore state it that way.
+
+\begin{proposition}[Removal cost]
+\label{prop:removal-cost}
+Consider the LPTE circuit of Definition~\ref{def:lpte} and an entangling pair $p$ with block $B_p$ and polar factor $U_p=\mathcal P_{\mathrm U}(B_p)$. Write the circuit as the ordered product $U_{\mathrm{LPTE}}=V_1U_pV_2$, with $V_1$ and $V_2$ the prefix and suffix products of the remaining blocks, and let the circuit with edge $p$ deleted be $\widehat U=V_1V_2$. Set $e_p=\norm{U_p-\mathbb{I}}_2$. Then for the operator loss of Eq.~\eqref{eq:op-loss} and the state loss of \S\ref{sec:objectives}, both of which take values in $[0,1]$,
+$$\bigl|L(\widehat U)-L(U_{\mathrm{LPTE}})\bigr|\;\le\;\min\bigl\{1,\;2e_p+e_p^2\bigr\},$$
+where $e_p=\norm{U_p-\mathbb{I}}_2$.
+In particular, if $\norm{U_p-\mathbb{I}}_2\le\varepsilon$ for any $\varepsilon>0$, deleting edge $p$ changes either primary objective by at most $\min\{1,2\varepsilon+\varepsilon^2\}$.
+\end{proposition}
+
+\noindent\textit{In words.} Deleting an edge is cheap whenever that edge is doing nothing, and ``doing nothing'' means the edge's unitary is the identity---not that its intensity is small. The proposition is a sufficient condition, not a necessary one: it bounds the cost of removal from above, and we make no claim that a costly edge is undeletable. We state the condition on $U_p$ rather than on a gradient because the gradient is the wrong quantity here; Proposition~\ref{prop:scalefree} below shows why.
+
+\begin{proof}
+Write $c=\mathrm{Tr}\bigl(U_{\mathrm{target}}^\dagger V_1U_pV_2\bigr)$ and $\widehat c=\mathrm{Tr}\bigl(U_{\mathrm{target}}^\dagger V_1V_2\bigr)$. Then
+$$\widehat c-c=\mathrm{Tr}\Bigl(U_{\mathrm{target}}^\dagger V_1(\mathbb{I}-U_p)V_2\Bigr),$$
+and since $|\mathrm{Tr}(M)|\le d\norm{M}_2$ for a $d\times d$ matrix while every factor but $U_p$ is unitary,
+$$|\widehat c-c|\;\le\;d\,\norm{U_p-\mathbb{I}}_2\;=\;d\,e_p .$$
+For the operator loss, $|\widehat c|^2-|c|^2=\mathrm{Re}\bigl[(\widehat c-c)(\overline{\widehat c}+\overline c)\bigr]$, so
+$$\bigl||\widehat c|^2-|c|^2\bigr|\;\le\;|\widehat c-c|\bigl(|\widehat c|+|c|\bigr)\;\le\;d e_p\cdot 2d\;=\;2d^2e_p ,$$
+using $|\widehat c|,|c|\le d$ because both are traces of unitaries against a unitary. Dividing by $d^2$ in Eq.~\eqref{eq:op-loss} gives $|L(\widehat U)-L(U_{\mathrm{LPTE}})|\le 2e_p\le 2e_p+e_p^2$. For the state loss the overlap is an inner product with normalized vectors, so the same computation gives $|\widehat c-c|\le e_p$ without the factor $d$, and hence $|L(\widehat U)-L(U_{\mathrm{LPTE}})|\le 2e_p$ again. Taking the minimum with $1$ uses only that both losses lie in $[0,1]$.
+\end{proof}
+
+The bound is a worst-case statement and we do not claim it is tight. How close the exact cost comes to $2e_p+e_p^2$ depends on how the target and the remaining blocks are drawn and on $d$, so any figure purporting to measure tightness would be a property of that sampling rather than of the bound. What we can report is the check itself: both losses were verified numerically over $4\times10^3$ random circuits per objective with no violations of the stated bound. In that check the exact cost came out well below the bound, which we read as the bound being conservative rather than as evidence of tightness. Operationally the bound is the design rule it was meant to be: if $\norm{U_p-\mathbb{I}}_2\le\varepsilon$ then deleting edge $p$ moves either primary objective by at most $\min\{1,2\varepsilon+\varepsilon^2\}$, so a candidate deletion carries a computable worst-case price.
+
+\subsection{Why intensity cannot satisfy the hypothesis}
+
+The hypothesis of Proposition~\ref{prop:removal-cost} is a condition on $U_p$. It cannot be reached by shrinking intensities, and the reason is a property of the polar projection itself rather than of any particular normalizer.
+
+\begin{proposition}[Scale invariance of the polar factor]
+\label{prop:scalefree}
+Let $B$ be invertible and $c>0$. Then $\mathcal P_{\mathrm U}(cB)=\mathcal P_{\mathrm U}(B)$. Consequently, for the LPTE block $B_p$ and any $s>0$, the rescaled block $sB_p$ yields exactly the same $U_p$, and $\norm{\mathcal P_{\mathrm U}(sB_p)-\mathbb{I}}_2=\norm{U_p-\mathbb{I}}_2$ for every $s$.
+\end{proposition}
+\begin{proof}
+Write $B=QP$ for the polar decomposition. Since $(cB)(cB)^\dagger=c^2BB^\dagger$, its positive factor is $\bigl((cB)^\dagger(cB)\bigr)^{1/2}=c\bigl(B^\dagger B\bigr)^{1/2}=cP$ and its unitary factor is $cB(cP)^{-1}=BP^{-1}=Q$. Uniqueness of the polar decomposition then gives $\mathcal P_{\mathrm U}(cB)=Q=\mathcal P_{\mathrm U}(B)$.
+\end{proof}
+
+This is the obstruction the framework has to clear, and it is not the one the softmax causes. Proposition~\ref{prop:scalefree} says the polar factor retains only the \emph{direction} of $B_p$ and discards its magnitude: scaling all intensities of an edge by any positive factor leaves the circuit bit-for-bit identical. We confirmed this numerically to $10^{-15}$ over six tested values of $c$ spanning twelve orders of magnitude, and confirmed that driving all intensities of a block to $10^{-8}$ leaves $\norm{U_p-\mathbb{I}}_2$ unchanged at $1.8729$. So ``$\rho\to0$'' does not make an edge idle; it makes $B_p$ numerically ill-conditioned while the circuit keeps acting exactly as before.
+
+Two consequences follow, and they are of opposite kinds. First, the hypothesis of Proposition~\ref{prop:removal-cost} is a genuine geometric condition on the block, and it is not reachable by any intensity threshold in the present parametrization. Second, it is reachable by a change of parametrization: for the identity-anchored block $B_p^{\mathrm{id}}=\mathbb{I}+\sum_P r_{p,P}(e^{-iP\,\delta\,\tau_{p,P}}-\mathbb{I})$ of Eq.~\eqref{eq:identity-anchored}, setting $s=\sum_P r_{p,P}\to0$ gives $B_p^{\mathrm{id}}\to\mathbb{I}$ and hence $\norm{\mathcal P_{\mathrm U}(B_p^{\mathrm{id}})-\mathbb{I}}_2\to0$, which we verified numerically ($2.000\to 0$ as the intensities fall to $10^{-8}$). The anchoring is therefore not one refinement among several but the specific change that makes the removal criterion well posed.
+
+Two further observations close the analysis, and both come from the differential statements of \S\ref{sec:relaxation}. They agree with the two propositions above rather than competing with them. Lemma~\ref{lem:frechet} is the infinitesimal form of Proposition~\ref{prop:scalefree}: a radial perturbation of $B_p$ leaves its polar factor $Q_p$ exactly fixed. The practical consequence is that the regularizer of Eq.~\eqref{eq:reg}, which acts purely by radially rescaling the symmetric factor $P_p$ toward $I$, cannot move $U_p$ at all, and so cannot drive an edge toward the condition of Proposition~\ref{prop:removal-cost}. A mechanism that only rescales magnitude is, on this ansatz, inert with respect to removal. In the opposite direction, Remark~\ref{rem:frechet-gen} shows that general perturbations \emph{do} rotate $Q_p$, through the Sylvester equation rather than through a radial mode. Deleting an edge is exactly such a general perturbation, which is why the removal cost need not vanish and why Proposition~\ref{prop:removal-cost} bounds it in operator norm instead of asserting that a derivative disappears.
+
+We are explicit about what remains unproved. We have not implemented the identity-anchored block and make no claim about how it would perform; what Proposition~\ref{prop:removal-cost} and Proposition~\ref{prop:scalefree} establish is that it is \emph{necessary} for the criterion to be satisfiable, not that it is sufficient in practice.
+
+\subsection{Measuring the threshold rule}
+\label{sec:pruning}
+
+Because the rule and Proposition~\ref{prop:removal-cost} live on different quantities, the rule's behaviour must be measured rather than inferred. We sweep $\tau_\kappa\in\{0,\,0.01,\,0.05,\,0.1,\,0.15,\,0.2\}$ on the 8-qubit benchmark over two seeds, optimizing once per seed and then re-thresholding the resulting intensities post hoc.
+
+The result is that the rule is \emph{reachable but inactive} at the operating point used in this work. At $\tau_\kappa=0.05$ both seeds retain all seven entangling pairs; no edge is pruned, the two-qubit gate counts are $21$ and $19$, and the density-matrix fidelities are $0.3485$ and $0.5135$. The smallest pair intensity encountered in the sweep is $0.0821$, comfortably above the threshold. A retained count of seven does not imply twenty-one gates for every seed: seed~3 compiles to 19 with all seven pairs present, illustrating the same term-collapse effect that \S\ref{sec:hardware} measures directly on the submitted parameters (a pair carrying a single dominant Pauli term transpiles to two native entangling gates rather than three).
+
+Increasing the threshold does eventually activate the rule---1 and 2 pairs are removed at $\tau_\kappa=0.1$ in seeds 0 and 3, 5 and 4 at $\tau_\kappa=0.15$, and 6 and 7 at $\tau_\kappa=0.2$---but at a steep fidelity cost: density-matrix fidelity falls to a mean of $0.171$ at $\tau_\kappa=0.1$ and $0.113$ at $\tau_\kappa=0.2$. Because the sweep is post hoc, the per-threshold fidelities are not independently optimized and are not monotone in $\tau_\kappa$; we report them as measured.
+
+\begin{table}[htbp]
+\centering
+\caption{$\tau_\kappa$ sensitivity on the 8-qubit benchmark (seeds 0 and 3). Retained is the number of entangling pairs surviving the threshold out of seven. DM is the noise-aware density-matrix fidelity. This is a \emph{post-hoc} scan: the optimization is run once per seed and the resulting pair intensities are then re-thresholded and the fidelity re-evaluated, which is why the recorded $\kappa$ vectors are bit-identical across all six rows of a given seed. The fidelity is correspondingly noisy and need not decrease monotonically---at $\tau_\kappa=0.15$ seed~3 scores higher ($0.3685$) than at $0.10$ ($0.0507$), because the surviving subset happens to interfere less.}
+\label{tab:tau-sweep}
+\footnotesize\begin{tabular}{lcccc}
+\toprule
+\textbf{$\tau_\kappa$} & \textbf{Retained} & \textbf{2Q gates} & \textbf{Depth} & \textbf{DM (seed 0 / seed 3)} \\
+\midrule
+0    & 7 / 7 & 21 / 19 & 79 / 75 & 0.3485 / 0.5135 \\
+0.01 & 7 / 7 & 21 / 19 & 79 / 75 & 0.3485 / 0.5135 \\
+0.05 & 7 / 7 & 21 / 19 & 79 / 75 & 0.3485 / 0.5135 \\
+0.10 & 6 / 5 & 18 / 15 & 68 / 34 & 0.2912 / 0.0507 \\
+0.15 & 2 / 3 & 6 / 9 & 16 / 22 & 0.1447 / 0.3685 \\
+0.20 & 1 / 0 & 3 / 0 & 16 / 0 & 0.1135 / 0.1122 \\
+\bottomrule
+\end{tabular}
+\vspace{2pt}
+{\raggedright\scriptsize Depth is $0$ when the last pair is removed, since the transpiled circuit is then empty.}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig10_tau_sweep.png}
+\caption{The threshold rule is inactive at the registered operating point. Retained entangling pairs (left axis, blue) and post-hoc density-matrix fidelity (right axis, red) against the registered threshold $\tau_\kappa$, pooled over seeds 0 and 3. Every edge survives to $\tau_\kappa=0.05$; pruning first appears at $0.10$ and the chain collapses by $0.20$, at a steep fidelity cost.}
+\label{fig:tau-sweep}
+\end{figure}
+
+Figure~\ref{fig:tau-sweep} makes the practical content of Table~\ref{tab:tau-sweep} immediate: the rule fires abruptly rather than gradually, and the fidelity cost of letting it fire is not small. We regard the mechanism as reachable rather than non-functional. It activates on schedule once the threshold exceeds the weight-sharing floor, and the sharpness of the transition is the expected behaviour of a density-threshold rule on a weight distribution.
+
+\subsection{Why the rule is inactive at this operating point, and the required change}
+
+We can explain why the rule does not fire at $\tau_\kappa=0.05$ rather than merely report that it does not. Under the global softmax of Eq.~\eqref{eq:lpte-pair} the intensities are a weight distribution, $\sum_j r_j=1$ over all $3(N-1)=21$ terms, so an individual pair can approach zero only by taking share from all other terms simultaneously. The measured minimum pair intensity of $0.0821$ is consistent with this: the weights remain distributed across pairs rather than concentrating on a subset, and no pair crosses $0.05$. An independent re-run of the pipeline gives a minimum pair intensity of $0.0864$ and likewise prunes nothing, a second independent record agreeing on the consequence. We therefore treat the rule as inactive by construction under the normalization used here: the floor is a property of the weight distribution, not a preference the optimizer expresses about any edge.
+
+There is a second reason, and it is the more fundamental one. Weight sharing is what stops an intensity from \emph{reaching} zero; it is not what decides whether a small intensity would \emph{mean} anything. By Proposition~\ref{prop:scalefree} the polar factor discards the magnitude of $B_p$, so an edge driven to zero intensity would still act on the circuit exactly as before. The measured inactivity at $\tau_\kappa=0.05$ is therefore not a threshold that is set slightly wrong: it is a threshold applied to a quantity that is provably uncoupled from the removal cost of Proposition~\ref{prop:removal-cost}. Any threshold chosen for $\kappa(p)$ is therefore miscalibrated in principle, not only in value, and no choice of $\tau_\kappa$ repairs it. This also withdraws one candidate fix we had previously offered alongside the identity anchor: normalizing each pair independently instead of globally does relieve weight sharing, but it leaves the scale invariance of Proposition~\ref{prop:scalefree} untouched, so it would let intensities reach zero without making the edge idle. We mention this because the two remedies are easy to conflate and only one of them addresses the actual obstruction.
+
+The constructive fix is consequently the identity-anchored form, and it is necessary rather than merely optional: replacing the block by
+\begin{equation}
+B_p=\mathbb{I}+\sum_P r_{p,P}\left(e^{-iP\,\delta\,\tau_{p,P}}-\mathbb{I}\right),
+\label{eq:identity-anchored}
+\end{equation}
+removes the weight-sharing floor and, as Proposition~\ref{prop:scalefree} requires, makes $\norm{U_p-\mathbb{I}}_2\to0$ reachable so that the criterion of Proposition~\ref{prop:removal-cost} becomes satisfiable. We did not implement it and make no claim about how it would perform; every headline number in this paper comes from one registered block parametrization applied uniformly across arms, seeds, transfer tests, and hardware runs, and introducing a second block form mid-study would confound exactly the comparisons the design is built to support. It remains the single most consequential piece of unfinished work in the framework, and we flag it as such rather than presenting the inactive operating point as a resolved question. What the two propositions do establish is that this variant is required, which is a different and weaker claim than that it would work.
+
+Two consequences follow for the rest of this paper. First, no headline result is attributable to a depth reduction: every arm starts from the same seven-pair, $21$-two-qubit-gate chain, and no pair is removed before optimization. A compiled circuit may still report fewer gates (Table~\ref{tab:ablation_full} records $12.6$ for full TOPAZ) because a pair carrying a single dominant Pauli term compiles to fewer native gates, the term-collapse effect already recorded in \S\ref{sec:pruning}. Depth is therefore an outcome of the protocol here and not an input to it, and the exact-preparation reference at $21$ gates and $0.924\pm0.003$ shows that gate count is not what buys fidelity. Second, the structural claim is independent of the threshold: the relaxed optimizer reaches the structural well with all 21 edges present, so the framework's central result does not depend on the pruning step firing. What Proposition~\ref{prop:removal-cost} supplies is the criterion that would license a deletion, and Proposition~\ref{prop:scalefree} explains why the intensities in Fig.~\ref{fig:wells-sparsity} cannot supply it.
+
+\subsection{Term-level sparsity is not edge-level removal}
+
+One distinction in this paper does more work than any other, and we state it separately. Across ten seeds the number of Pauli terms remaining above the activity threshold is $6$--$14$, with mean $9.2$ of $21$. The 8-qubit linear chain has $7$ nearest-neighbour pairs, so an active count of $\sim\!9$ exceeds the number of pairs and must be read as \emph{terms}, not edges. TOPAZ reliably concentrates on a subset of terms and leaves the rest inactive. That is genuine sparsity, and it is the reproducibility phenomenon of \S\ref{sec:well}. It is not edge removal: no entangling edge is deleted at the registered threshold in this work.
+
+% ============================================================
+\section{The structural well}
+\label{sec:well}
+% ============================================================
+
+Across every seed, session, and backend, the trajectory shows the same shape: a rapid descent over the first 5--10 iterations, then a stable floor (Fig.~\ref{fig:traj}). The well is not a single attractor but a family of sparse subspaces.
+
+We call this object a \emph{structural well}, and the title's \emph{geometric well} names the same thing. Definition~\ref{def:well} defines it as a connected component of a sublevel set $S_c(L)$ of the loss, so it is a geometric object in the $(\rho,\tau)$ parameter landscape rather than a metaphor: the wells are basins of the same landscape, and the geometry that separates them is fixed by the loss and the design domain, not chosen by us. Figure~\ref{fig:well} shows one such basin directly: a 2D $(\rho,\tau)$ slice with the sublevel sets of Definition~\ref{def:well} drawn as contours and the optimizer's trajectory descending into a single component.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig1_well_slice.png}
+\caption{The structural well on \fakefez, projected onto a 2D $(\rho,\tau)$ slice. Colour encodes the loss $L=1-F$; solid contours are sublevel sets $S_c(L)$ as in Definition~\ref{def:well}. The optimizer's trajectory descends into one component; a different seed reaches a different component at the same floor level.}
+\label{fig:well}
+\end{figure}
+
+\subsection{A family of seed-distinct wells}
+
+Each seed suppresses a different subset of the 42-dimensional $(\rho,\tau)$ space, and the survivors are not the target Hamiltonian's largest coefficients---the top six target terms are all suppressed. The optimizer selects for noise robustness, not target matching. A seed-distinct basin that reproduces across seeds and transfers across noise models is the structural object we claim to have found, and it is the result that holds up under every check we applied to it. Figure~\ref{fig:wells-sparsity} makes the family-of-wells picture concrete: no two of the ten displayed seeds suppress the same set of Pauli terms. Extending the test to a fifty-seed ensemble sharpens this into a checkable statement: \textbf{49 of the 50 seeds have a distinct term-level suppression set} at the $\rho<0.05$ level, with a single collision in which seeds 5 and 15 suppress exactly the same two terms (indices 3 and 8) at different converged fidelities ($0.429$ and $0.339$). The suppressed-term count varies widely across seeds, from none to ten of the twenty-one, so the family of wells is genuinely seed-dependent rather than one attractor sampled repeatedly, while the near-uniqueness of the suppression patterns shows the optimizer is selecting structured subsets rather than drifting arbitrarily.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig7_sparsity_heatmap.png}
+\caption{Family-of-wells sparsity: final intensities for 10 random seeds (rows) across the 21 LPTE Pauli terms (columns; three $\{XX,YY,ZZ\}$ terms on each of the seven nearest-neighbour pairs). Dark cells are individually suppressed terms ($\rho<0.05$ in the unnormalized parameter). Each seed retains a different subset of terms. This is term-level suppression in the unnormalized parameter; it is distinct from the pair-level rule of \S\ref{sec:pruning}, which is inactive at the operating point used here, and by Proposition~\ref{prop:scalefree} it is not evidence that any edge has become removable, since suppressing intensities leaves the corresponding $U_p$ unchanged.}
+\label{fig:wells-sparsity}
+\end{figure}
+
+The resulting fidelity level is reproducible even though the sparsity pattern is not. Across ten independent seeds TOPAZ settles into a family of basins on the same regional floor: mean density-matrix fidelity $0.737\pm0.066$, with individual seeds spanning $0.641$--$0.840$. We emphasize that this spread is a real feature of the measurement and not a defect: independent seeds do \emph{not} converge to a single common point, and no claim is made that they do. What is reproducible is the floor level and the mechanism producing it: every seed improves substantially over its own random initialization (10/10; mean gain $+0.541$), so the discovered basin is a property of the ansatz and objective rather than of one trajectory. Consistent with Remark~\ref{rem:obs-wells}, the plurality of wells is the phenomenon; the claim is a shared floor, not a shared minimum. An independent ten-seed re-implementation of this protocol reproduces the structure but not the point estimate, reaching $0.6834\pm0.1295$ against $0.737\pm0.066$---$0.054$ lower and well inside the spread of either, with the same qualitative signature throughout.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig3_traj_8q.png}
+\caption{Two representative 8-qubit LPTE trajectories under triple-channel correlated noise (Run~1: $0.172\to0.371$; Run~2: $0.233\to0.838$). Shaded bands are $\pm1$ standard deviation across the 10-seed ensemble. Both show a rapid descent over the first 5--10 iterations followed by a stable floor.}
+\label{fig:traj}
+\end{figure}
+
+The floor is a property of the ansatz rather than of one trajectory. Figure~\ref{fig:fakefez-traj} shows the product-form convergence trace on \fakefez{}: the trajectory descends over the first 5--10 iterations and then flattens at the structural-well floor, with no sign of continued improvement over the remaining budget.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig4_fakefez_conv.png}
+\caption{Product-PTE convergence on \fakefez{} (8 qubits, 42 parameters). The trajectory descends over the first 5--10 iterations and flattens at the structural-well floor; the dashed line marks $F=0.6329$.}
+\label{fig:fakefez-traj}
+\end{figure}
+
+\subsection{Curvature of the well}
+\label{sec:canyon}
+
+The measured Hessian at the well is $42\times42$ and its spectrum is concentrated on eight directions, with a system-wide participation-ratio effective rank $(\sum\lambda)^2/\sum\lambda^2=3.12$. Figure~\ref{fig:hessian} plots the full spectrum. Restricting it to the intensity ($\rho$) and timing ($\tau$) blocks separately, we observe the two-band structure:
+
+\begin{itemize}
+\item \textbf{Intensity subspace: uniformly stiff, not degenerate.} Eigenvalues $1.67\times10^3$, $7.76\times10^2$, $6.29\times10^2$, $4.07\times10^2$; mean $\sim\!8.7\times10^2$; span a factor of $4.1$; participation-ratio effective rank $3.07$, well away from unity.
+\item \textbf{Timing subspace: one stiff direction on a ladder of soft ones.} Eigenvalues $3.50\times10^{1}$, $1.40\times10^{-1}$, $1.10\times10^{-2}$, $5.00\times10^{-3}$; effective rank $1.01$; largest-to-smallest ratio $7.0\times10^{3}$. Optimal timings are spread non-uniformly across $\tau\in[0.004,35]$.
+\end{itemize}
+
+Two consequences follow. First, the two-band clustering is real and is not an artifact of an aggregation convention: every $\rho$ eigenvalue exceeds $4\times10^2$, while the $\tau$ ladder falls $52$ orders of magnitude below the stiffest intensity mode. Second, the well is low-rank in an absolute sense: the measured ratio of largest to smallest non-negligible eigenvalue is $3.3\times10^{5}$, and $\lambda_{\min}(\nabla^2 L)=0$ at the basin boundary. The well is a narrow valley embedded in larger plateau structure---consistent with Proposition~\ref{prop:convexity} (positive definite at the optimum) and with the local nature of that proposition (the curvature vanishes at the boundary).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig9_hessian_spectrum.png}
+\caption{Loss Hessian at the converged point on the full $42$-parameter LPTE problem, plotted on a $\log_{10}$ axis. The spectrum is concentrated on eight directions with participation-ratio effective rank $3.12$. It separates into a stiff band of four intensity directions ($\rho$, blue) and a soft ladder of timing-dominated modes ($\tau$, red) whose eigenvalues decay to zero: the two blocks differ by a factor of $4.4\times10^{7}$ after the first eight modes, and the softest non-zero timing eigenvalue lies $52$ orders of magnitude below the stiffest intensity eigenvalue. One exact zero mode marks the basin boundary ($\lambda_{\min}=-1.5\times10^{-10}$). Two-band clustering is a property of the measured spectrum, not of an aggregation convention.}
+\label{fig:hessian}
+\end{figure}
+
+\subsection{Noise-model transfer}
+\label{sec:transfer}
+
+If the well were an overfit to one simulator's error model, changing that model would degrade it. To test this we trained parameters under each of six noise models and evaluated every parameter set under every model, averaging over ten seeds. The pooled off-diagonal transfer efficiency is the ratio of mean cross-model fidelity to mean on-model fidelity,
+\begin{equation}
+\eta=\frac{\dfrac{1}{N(N-1)}\sum_{i\neq j}\bar F_{ij}}{\dfrac{1}{N}\sum_{i}\bar F_{ii}},
+\label{eq:eta}
+\end{equation}
+where $\bar F_{ij}$ is the mean density-matrix fidelity over 10 seeds of parameters trained under model $i$ and evaluated under model $j$; diagonal entries are excluded from the numerator to avoid self-counting. The result is $\eta=0.9943$ (Fig.~\ref{fig:noise_transfer}): parameters trained under one model retain $99.4\%$ of their on-model fidelity under any other. This is a ratio of averaged fidelities and is quoted without a confidence interval. We state the normalization explicitly because the unnormalized ratio of sums over the same artifact evaluates to $4.9717$, not $0.9943$; the printed quantity is the ratio of means. The per-row alternative $\frac{1}{N}\sum_i\left[\frac{1}{N-1}\sum_{j\neq i}\bar F_{ij}/\bar F_{ii}\right]$ evaluates to $1.0007$ on the same artifact, so the two aggregations agree to within $0.6\%$ and the conclusion is not sensitive to the choice.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig5_transfer_matrix.png}
+\caption{Noise-model transfer matrix: density-matrix fidelity of parameters trained under model $i$ (rows) and evaluated under model $j$ (columns), averaged over 10 seeds. Pooled off-diagonal transfer efficiency $\eta=0.9943$ in the ratio-of-means form of Eq.~\eqref{eq:eta}. Rows~0 and~5 (\texttt{nominal} and \texttt{high\_readout}) are bit-identical because they differ only in readout error, which a density-matrix fidelity cannot register; the experiment therefore spans five distinct quantum noise models.}
+\label{fig:noise_transfer}
+\end{figure}
+
+Two properties of Fig.~\ref{fig:noise_transfer} need comment, and in both cases the artifact itself resolves what would otherwise look like an anomaly.
+
+First, rows~0 and~5 (\texttt{nominal} and \texttt{high\_readout}) are bit-identical across all six columns and all ten seeds. The archived configurations differ \emph{only} in readout error ($\left[\begin{smallmatrix}0.98&0.02\\0.04&0.96\end{smallmatrix}\right]$ versus $\left[\begin{smallmatrix}0.95&0.05\\0.08&0.92\end{smallmatrix}\right]$) and share identical quantum-error parameters. Readout error acts on measurement, not on the state, and the observable plotted here is computed on the state, so it is blind to it. The identity is the correct signature of a readout-only perturbation measured with a readout-insensitive observable, and it is positive evidence that the simulator is consistent. The consequence is that the experiment spans five distinct quantum noise models; the sixth configuration is a readout perturbation this observable cannot register by construction.
+
+Second, the per-row values for the two damping channels \texttt{amp\_damp} and \texttt{phase\_damp} exceed~1 ($1.1556$ and $1.1077$), meaning parameters trained under those models score higher against other models than against their own training model. This is a real feature of the matrix rather than an error, and it has a direct reading: for those two rows the training noise is not the dominant error term, so the on-model diagonal is depressed relative to the off-model mean. It bounds the claim---the aggregate $\eta=0.9943$ is a mean over rows and does not certify that \emph{every} trained parameter set is robust to a change of noise model, and for two of the six it demonstrably is not. The scope is also qualified: transfer is demonstrated within the same parametrized noise-model family, not across categorically different channels such as correlated two-qubit faults or non-Markovian dynamics.% ============================================================
+\section{Applications and comparisons}
+\label{sec:applications}
+% ============================================================
+
+\subsection{Evaluation protocol}
+
+TOPAZ runs against two families of noise. Device-calibrated backends are used for optimization and hardware submission; six synthetic variants are used for the transfer test of \S\ref{sec:transfer}.
+
+\paragraph{Triple-channel correlated (synthetic).}
+Depolarizing at $p=0.005$, amplitude damping at $\gamma=0.008$, and phase damping at $\lambda=0.012$, with multi-qubit correlations decaying as $p_{\mathrm{corr}}(d)=\alpha p e^{-d/\xi}$, $\xi=2.0$~\cite{Kraus1983}.
+
+\paragraph{\fakefez.}
+IBM's calibrated snapshot of \ibmfez{} (Heron r2, 156 qubits) with per-gate error rates and qubit-specific $T_1$, $T_2$, and readout errors~\cite{McKay2020}. All headline optimization experiments use \fakefez{}.
+
+\paragraph{Live \ibmfez.}
+The optimized $(\rho,\tau)$ from \fakefez{} are submitted to live Heron r2~\cite{IBMHeron2024} without re-optimization.
+
+\paragraph{Implementation note.}
+\label{par:engine}
+Applying a $k$-local Kraus channel to a density matrix by dense matrix multiplication costs $O(2^{3N})$ per term. The tensor-dot engine used in the synthetic path treats the state as a tensor with $2N$ indices and contracts only the $2|\mathcal S|$ active indices of the channel's support set $\mathcal S$, letting the spectator set $\mathcal S^c$ pass through unchanged, so each term costs $O(2^{2|\mathcal S|})$ rather than $O(2^{2N})$. At $N=10$ for one layered triple-channel map this gives $0.047$~s against $180.400$~s for dense Kraus, a $\sim$3838$\times$ wall-clock speedup. The complexity-ratio bound alone predicts $2^{N}=1024\times$, so the measured figure is consistent with the stated complexity rather than in tension with it. The engine performs both ideal and noisy evolution on the synthetic path, computes only the noiseless target on the \fakefez{} path (noisy evaluation is delegated to AerSimulator), and plays no role on live hardware, where the backend executes gates directly.
+
+\subsection{The retraction is the mechanism}
+\label{sec:ablation}
+
+If relaxation is the mechanism of this paper, then removing the retraction should remove the mechanism. Table~\ref{tab:ablation_full} tests that directly on the 8-qubit \fakefez{} benchmark over ten seeds, with significance assessed against full TOPAZ at a Bonferroni-corrected $\alpha=0.05/36\approx0.0014$.
+
+\begin{table}[htbp]
+\centering
+\caption{Full ablation on the 8-qubit \fakefez{} benchmark (LPTE, 21 two-qubit gates). Ten seeds, 40 outer iterations, dual-MMA except where noted. The 2Q column counts two-qubit gates in each arm's compiled circuit after optimization; every arm starts from the same 21-gate structure, so a reduced count is an outcome of the protocol rather than a reduced input. Significance is versus full TOPAZ at a Bonferroni-corrected $\alpha=0.05/36\approx0.0014$. The no-polar arm removes the projection and replaces the unitarity regularizer $\norm{B_k^\dagger B_k-I}_F^2$ of Eq.~\eqref{eq:reg} with an $\ell_1$ penalty on the raw intensities, so the comparison bounds the cost of the feasibility machinery jointly rather than isolating the polar factor alone.}
+\label{tab:ablation_full}
+\resizebox{\columnwidth}{!}{\begin{tabular}{lcccc}
+\toprule
+\textbf{Condition} & \textbf{DM Fid.} & \textbf{2Q} & \textbf{Active} & \textbf{$d$} \\
+\midrule
+Full TOPAZ (baseline) & $0.737\pm0.066$ & $12.6$ & $9.2$ & --- \\
+COBYLA (LPTE) & $0.729\pm0.069$ & $15.6$ & $13.6$ & $0.12^{ns}$ \\
+Single MMA & $0.623\pm0.166$ & $19.9$ & $19.9$ & $0.90^{ns}$ \\
+Adam (LPTE) & $0.514\pm0.209$ & $16.5$ & $14.8$ & $1.44^{ns}$ \\
+No polar decomp. & $0.334\pm0.170$ & $16.7$ & $15.8$ & $3.13^{***}$ \\
+HEA (3-layer)\cite{Kandala2017} & $0.329\pm0.110$ & $28.0$ & $37.2$ & $4.50^{***}$ \\
+Product-only PTE & $0.279\pm0.175$ & $16.7$ & $16.0$ & $3.46^{***}$ \\
+Random PTE & $0.056\pm0.031$ & $21.0$ & $21.0$ & $13.21^{***}$ \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+{\raggedright\scriptsize $^{***}p<0.001$ (Bonferroni-passing); ns, not significant. Cohen's $d$ versus full TOPAZ, computed from the pooled sample standard deviation ($n_{1,2}=10$, $d=(\bar x_{1}-\bar x_{2})/s_{\mathrm{pool}}$, $s_{\mathrm{pool}}$ from the $\mathrm{ddof}=1$ variances). The Active column counts active Pauli terms out of $21$ for every condition except Single MMA and HEA, where the producer counts surviving raw ansatz parameters; HEA's $37.2$ reflects its larger parameter count ($\sim\!96$) and is not comparable to the baseline $9.2$. Exact state preparation under the same noise scores $0.924\pm0.003$ with all 21 gates active.}
+\end{table}
+
+Removing the polar projection halves the fidelity, from $0.737\pm0.066$ to $0.334\pm0.170$ ($d=3.13$, Bonferroni-passing), and no other single component of the stack comes close: the optimizer choice barely matters (COBYLA, $d=0.12$) while the hardware-efficient ansatz is far behind ($0.329\pm0.110$, $d=4.50$) and PPTE further still ($0.279\pm0.175$, $d=3.46$). The retraction is what makes the relaxed landscape navigable, and the measurement is ensemble-backed on ten seeds.
+
+The comparison with exact preparation is worth stating plainly rather than burying. Under identical noise, exact state preparation compiled to the same 21 native entangling gates scores $0.924\pm0.003$, above LPTE's $0.737\pm0.066$. Since both forms use the same 21-gate form, the margin LPTE concedes is not bought with depth; it is the price of optimizing a relaxed per-pair landscape rather than transpiling an exact decomposition. We therefore claim no advantage over exact preparation on this observable, and report the ablation to delimit what the shallow topology can and cannot reach.
+
+\subsection{Parameter efficiency}
+
+Parametric efficiency is summarized here rather than in a separate table, and we quote the 10-seed means first, since the comparison does not depend on seed selection. At equal parameter count LPTE attains $0.737\pm0.066$ where HEA attains $0.329\pm0.110$, a $5.1\times$ gap in mean fidelity per parameter at $42$ versus $\sim96$ parameters, and a $2.6\times$ gap over PPTE at the same $42$ parameters. Selecting the best seed of each ensemble widens the per-parameter gap against HEA to $3.5\times$ ($0.8260$ versus $0.5332$). Against PPTE the per-parameter gap narrows to $1.3\times$ ($0.8260$ versus $0.6329$, both at $42$ parameters), but the two numbers are not drawn the same way: $0.8260$ is the best of ten LPTE seeds, whereas $0.6329$ is PPTE's single canonical trajectory (Fig.~\ref{fig:fakefez-traj}) rather than the best of its ensemble, whose ten-seed mean is $0.279\pm0.175$. Parameter efficiency, unlike depth, is the advantage that survives all three checks we applied to it, and it is the one that holds on an independent reproduction.
+
+\subsection{Variational eigenvalue solving at matched budget}
+\label{sec:vqe-matched}
+
+The main TOPAZ pipeline optimizes a noise-aware objective evaluating both noisy and ideal fidelity, which is what produces the hardware result of \S\ref{sec:hardware}. The $H_2/H_4$ benchmark deliberately restricts that regime: the optimizer receives only raw noisy energy measurements, with no target state, no ideal observable, and no information about the post-processing it will later be stacked with. This tests whether LPTE's topology still confers noise resilience when the ideal-state constraint is removed.
+
+Three ans\"atze (LPTE, the hardware-efficient form of Kandala \emph{et al.}~\cite{Kandala2017} (depth 3 for $H_2$, depth 5 for $H_4$), and the Hamiltonian variational ansatz of Wiersema \emph{et al.}~\cite{Wiersema2020} at $d=2$) are compared on the 4-qubit $H_2$ path $[136,143,142,141]$ and the 8-qubit $H_4$ path $[125,124,123,136,143,142,141,140]$ under \fakefez, with ZNE, CDR, and VD post-processing across ten seeds.
+
+\begin{table}[htbp]
+\centering
+\caption{$H_2/H_4$ variational benchmark under \fakefez, energy error relative to FCI in mHa, mean$\pm$s.d. over 10 seeds. The recorded runs used unequal optimizer budgets (see text); Table~\ref{tab:vqe-matched} reports the equalized re-evaluation, which reverses the $H_4$ ranking.}
+\label{tab:vqe}
+\resizebox{\columnwidth}{!}{\begin{tabular}{llccccc}
+\toprule
+\textbf{Mol.} & \textbf{Ansatz} & \textbf{Noisy} & \textbf{Noiseless} & \textbf{ZNE+CDR} & \textbf{Seeds} & \textbf{Conv.} \\
+\midrule
+$H_2$ & \textbf{LPTE} & $71.96\pm16.8$ & $26.72\pm14.5$ & $\mathbf{26.16}\pm14.8$ & 10 & $100\%$ \\
+$H_2$ & HEA ($d{=}3$) & $54.04\pm10.5$ & $24.23\pm8.8$ & $0.0^{\ast}$ & 10 & $30\%$ \\
+$H_2$ & HVA ($d{=}2$) & $748.28\pm25.3$ & $492.01\pm162.8$ & $\dagger$ & 10 & $0\%$ \\
+\midrule
+$H_4$ & \textbf{LPTE} & $235.15\pm77.4$ & $83.82\pm74.5$ & $83.75\pm74.4$ & 10 & $100\%$ \\
+$H_4$ & HEA ($d{=}5$) & $889.90\pm232.8$ & $710.35\pm241.0$ & $713.16\pm243.3$ & 10 & $0\%$ \\
+$H_4$ & HVA ($d{=}2$, 368p) & $2720.55\pm6.5$ & $2270.06\pm462.7$ & $\dagger$ & 10 & $0\%$ \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+{\raggedright\scriptsize $^{\ast}$Extrapolated value clamped to FCI. $^{\dagger}$ZNE+CDR not run on HVA. LPTE ran the dual-MMA solver (35 outer iterations with an inner COBYLA loop); the HEA and HVA baselines ran 500-iteration COBYLA.}
+\end{table}
+
+On $H_2$, LPTE plus ZNE+CDR reduces the mean energy error from $71.96$~mHa to $26.16$~mHa, a $2.75\times$ reduction and as little as $8.96$~mHa on the best seed---still above the $1.6$~mHa chemical-accuracy bar. On $H_4$, LPTE's ZNE+CDR ($83.75$~mHa) recovers its own noiseless floor ($83.82$~mHa) almost exactly, because the shallow depth (roughly 8 effective two-qubit gates) preserves the noise-energy relationship that extrapolation requires. HEA extrapolations violated physical bounds on 7 of 10 seeds and required clamping; LPTE required none.
+
+The $H_4$ ranking in Table~\ref{tab:vqe} must not be read as a structural result, because the recorded budgets were unequal: the $H_4$ HEA row is what that ansatz delivers at a 500-iteration COBYLA budget, not at a matched one. We therefore equalized the budgets in a dedicated re-evaluation. The depth-5 HEA ansatz (88 parameters) was converged noiselessly under a $10{,}000$-iteration COBYLA budget across four independent seeds, then evaluated under the identical noisy protocol---density-matrix simulation on the quiet $H_4$ path, with ZNE+CDR at 20 noise factors and VD---with no parameter retrained on the noisy objective, so the re-evaluation if anything understates HEA.
+
+\begin{table}[htbp]
+\centering
+\caption{Equalized-budget $H_4$ re-evaluation under \fakefez. HEA was re-converged noiselessly at a $10{,}000$-iteration COBYLA budget, then evaluated under the paper's full noisy protocol. The median over the four converged seeds is reported; ranges are in parentheses. LPTE rows are the recorded values from Table~\ref{tab:vqe}. At matched budget the energy ranking reverses: HEA reaches a lower noiseless error than LPTE.}
+\label{tab:vqe-matched}
+\resizebox{\columnwidth}{!}{\begin{tabular}{lccc}
+\toprule
+\textbf{Config.} & \textbf{Noiseless} & \textbf{Noisy} & \textbf{ZNE+CDR} \\
+ & (mHa) & (mHa) & (mHa) \\
+\midrule
+LPTE (recorded) & $83.82\pm74.5$ & $235.15\pm77.4$ & $83.75\pm74.4$ \\
+HEA @500 iter (recorded) & $710.35\pm241.0$ & $889.90\pm232.8$ & $713.16\pm243.3$ \\
+HEA @10k (median) & $34.2$ & $272.4$ & $34.5$ \\
+HEA @10k (range) & $(23.7$--$38.6)$ & $(204.8$--$285.6)$ & $(21.9$--$48.9)$ \\
+\midrule
+HEA clamp required (seeds) & --- & --- & $7/10$ \\
+LPTE clamp required (seeds) & --- & --- & $0/10$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Equalizing the budget removes the apparent advantage. At $10{,}000$ iterations HEA converges to a noiseless error of $23.7$--$38.6$~mHa, \emph{below} LPTE's $83.82$~mHa, and its post-mitigation error of $21.9$--$48.9$~mHa (median $34.5$; noiseless median $34.2$) is comparable to or better than LPTE's on the same benchmark. Per-seed noiseless/ZNE+CDR values are $38.35/39.32$, $23.74/21.93$, $30.03/29.64$, $38.56/48.93$~mHa. The claim of a $3.7\times$ raw and $8.5\times$ mitigated LPTE advantage on $H_4$ that Table~\ref{tab:vqe} alone would support is an artifact of unequal budgets, not a structural property: given a competent optimizer budget, a hardware-efficient ansatz reaches the same quality on this task. We state this explicitly because it bounds what our own earlier framing would have implied.
+
+What survives equalization is narrower and, we believe, still genuine: \textbf{mitigation-compatibility}. On the shallow LPTE topology, ZNE/CDR extrapolation remained physically valid on 10/10 seeds with no clamping. On the deeper HEA forms, at either budget, the extrapolated energies violated physical bounds on 7 of 10 seeds and required clamping to FCI. The claim we make is therefore not that the structured ansatz produces fundamentally lower energies (the equalized data refute that), but that its shallow, sparse topology keeps post-processing mathematically valid, which is a property of circuit structure and not of budget. That is precisely the kind of structural claim a topology-optimization framing is supposed to deliver, and it is the reason the framework still has something to say after the energy comparison is settled.
+
+\subsection{Cross-Hamiltonian transfer}
+
+If TOPAZ reduced to a generic reusable circuit, its optimized topology would transfer to a new problem without a penalty. It does not. An $H_4$-optimized topology (Layout A, 263 entangling gates) was re-entered as the ansatz for an 8-qubit transverse-field Ising model at the critical point $J=h=1$ (FCI $E_0=-9.837951$~Ha). Holding the structure fixed and re-optimizing only the angles gives a noisy error of $1211.0$~mHa; running the full pipeline from scratch gives $932.1$~mHa (Table~\ref{tab:ham-transfer}).
+
+\begin{table}[htbp]
+\centering
+\caption{Cross-Hamiltonian transfer of an optimized topology, 8-qubit TFIM at $J=h=1$ (FCI $E_0=-9.837951$~Ha). The transferred and fresh structures are of essentially equal size, so the gap is structural rather than a gate-count effect.}
+\label{tab:ham-transfer}
+\resizebox{\columnwidth}{!}{\begin{tabular}{lccc}
+\toprule
+\textbf{Structure} & \textbf{Entangling gates} & \textbf{Noisy $\Delta E$} & \textbf{vs.\ fresh} \\
+\midrule
+Transferred Layout A (TOPAZ, $H_4$) & $263$ & $1211.0$ mHa & $+278.9$ mHa \\
+Fresh Layout B (TOPAZ, TFIM) & $264$ & $932.1$ mHa & --- \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+The transferred topology is worse by $278.9$~mHa even though the two structures have essentially equal size, so the gap is purely structural. TOPAZ optimizes for the target's entangling structure; it does not reduce to a reusable circuit. We read this as evidence for rather than against the framework: a genuine topology optimization must be target-specific, and a target-agnostic reusable ansatz would indicate that the search had not actually found anything structural.
+
+\subsection{Stacking with post-processing QEM}
+\label{sec:stack}
+
+TOPAZ composes with post-processing because the two act on different parts of the pipeline: TOPAZ moves density variables before execution, while ZNE, CDR, TPNM, and VD correct observables afterwards. We evaluate the whole mitigation set on a complete ten-seed ensemble and report mean$\pm$s.d. with no seed excluded (Table~\ref{tab:stacking8q}). The methods divide by observable, and we keep the two observables separate rather than averaging them into a single ``mitigated fidelity''.
+
+\begin{table}[htbp]
+\centering
+\caption{8-qubit mitigation on \fakefez{} over a complete ten-seed ensemble, mean$\pm$s.d. ($\mathrm{ddof}=1$), no seed excluded. DM: density-matrix fidelity under the target noise model. Echo: inversion-test fidelity (target-echo), with the noiseless ceiling for the same circuit given for reference.}
+\label{tab:stacking8q}
+\resizebox{\columnwidth}{!}{\begin{tabular}{lccc}
+\toprule
+\textbf{Configuration} & \textbf{DM Fidelity} & \textbf{Echo Fidelity} & \textbf{Noiseless echo} \\
+\midrule
+Random-init baseline ($n{=}5$) & $0.2497$ & --- & --- \\
+TOPAZ LPTE alone & $\mathbf{0.5146}\pm0.1469$ & $0.4702\pm0.1366$ & $0.5392\pm0.1542$ \\
+LPTE $+$ ZNE & $0.5146\pm0.1469$ & $0.4551\pm0.1431$ & --- \\
+LPTE $+$ CDR & --- & $0.5248\pm0.1486$ & --- \\
+LPTE $+$ TPNM & --- & $0.4899\pm0.1407$ & --- \\
+LPTE $+$ VD & --- & $0.5392\pm0.1542$ & $0.5392\pm0.1542$ \\
+\bottomrule
+\end{tabular}}
+\vspace{2pt}
+{\raggedright\scriptsize Each method is applied individually; a combined ZNE$+$CDR$+$VD stack was not run, so the rows are not additive. ZNE extrapolates to $\lambda=0$, which is precisely the noiseless operator, so \emph{its DM entry is identically equal to the unmitigated one in all 10 seeds}---a null operation on that observable by construction, not a measured null effect. On the echo, ZNE does reduce fidelity ($0.4702\to0.4551$, $-0.0151$); we report that as a negative result. VD is computed as $(\rho^2)_{00}/\mathrm{Tr}(\rho^2)$, capped at the noiseless echo, so its agreement with that ceiling is a property of the metric rather than independent evidence of recovery: the defensible claim is that VD removes the residual noise penalty on the echo observable. The 10-seed mitigated rows and the 5-seed baseline are different ensembles and are not differenced against one another.}
+\end{table}
+
+Two readings are worth making explicit. ZNE's DM entry is a null operation by construction, so no gain is claimed there; on the echo it is a small measured loss. VD's agreement with the noiseless ceiling is a property of its capped metric, so the defensible claim is removal of the residual echo penalty rather than recovery beyond the ideal. The relation to \S\ref{sec:vqe-matched} is the structural one: what shallow topology buys is that post-processing stays inside its validity regime, which is why CDR and VD behave well here and clamping was needed on the deeper form.
+
+\subsection{Live hardware on \texorpdfstring{\ibmfez}{ibm_fez}}
+\label{sec:hardware}
+
+\begin{lemma}[Lipschitz equivalence gap]
+\label{lem:lipschitz}
+The optimizer evaluates the polar-projected $\Usafe$ while hardware executes the compiled Trotter product $U_{\mathrm{circ}}$ with $\norm{\Usafe-U_{\mathrm{circ}}}\le\epsilon$~\cite{Childs2021}. By Fuchs--van de Graaf~\cite{Fuchs1999}, $D\le\sqrt{1-F}\le\sqrt{c}\,\epsilon$, so $|L_{\mathrm{ideal}}-L_{\mathrm{hardware}}|\le K\sqrt{c}\,\epsilon$. Because $\epsilon$ is small by design, this bounds how far the hardware landscape can drift from the simulator landscape.
+\end{lemma}
+
+The optimized $(\rho,\tau)$ from \fakefez{} were submitted to live \ibmfez{} (Heron r2, 156 qubits), where the experiment itself runs on the 8-qubit quietest path $[140,\dots,147]$, transpiled at $\mathrm{opt\_level}=3$ with $n=4000$ shots per measurement. State preservation is measured with a target-echo (inversion test): prepare the LPTE state, then apply $U_{\mathrm{target}}^{\dagger}$ and measure the return probability. The round trip runs the forward circuit twice plus the transpilation overhead of $U_{\mathrm{target}}^{\dagger}$, so it is strictly harder than single-pass preparation. Two product-Trotter baselines are measured on the same day: an \emph{untuned} one with random gate parameters, and an \emph{optimized} one using the same dual-MMA routine and the same 30-iteration budget, isolating topology from parameter optimization.
+
+\begin{table}[htbp]
+\centering
+\caption{Live \ibmfez{} results, three same-day replications on the quietest path (path $[140,\dots,147]$, $\mathrm{opt\_level}=3$, $n=4000$ shots). Measurement SEMs are binomial ($\sqrt{F(1-F)/n}$); the TOPAZ echo is reported as mean$\pm$s.d. across the three sessions. Computed (noiseless) entries are exact evaluations of the submitted circuit and carry no shot noise.}
+\label{tab:hw}
+\resizebox{\columnwidth}{!}{%
+\footnotesize\begin{tabular}{llc}
+\toprule
+\textbf{Configuration} & \textbf{Type} & \textbf{Fidelity} \\
+\midrule
+Product-Trotter, untuned random params (echo)    & measured  & $0.0478\pm0.0034$ \\
+Product-Trotter, MMA-optimised (echo)            & measured  & $0.1008\pm0.0048$ \\
+TOPAZ LPTE (echo, mean of 3 sessions)            & measured  & $0.2883\pm0.0394$ \\
+TOPAZ LPTE (echo, individual sessions)           & measured  & $0.2443\pm0.0068$,\ $0.3008\pm0.0073$,\ $0.3200\pm0.0074$ \\
+ZNE on TOPAZ echo (per session)                   & measured  & $0.2058$,\ $0.3075$,\ $0.3968$ \\
+TPNM on TOPAZ echo (per session)                  & measured  & $0.2919$,\ $0.3159$,\ $0.3200$ \\
+\midrule
+TOPAZ LPTE (one-way)                              & noiseless & $0.5662$ \\
+Product-Trotter, MMA-optimised (one-way)          & noiseless & $0.1768$ \\
+Product-Trotter, untuned random (one-way)         & noiseless & $0.0758$ \\
+\midrule
+\multicolumn{2}{l}{TOPAZ gates / depth} & $19$ 2Q / $76$ \\
+\multicolumn{2}{l}{MMA-optimized PTE gates / depth} & $14$ 2Q / $56$ \\
+\multicolumn{2}{l}{Untuned PTE gates / depth} & $21$ 2Q / $78$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+The three live sessions are itemized in Table~\ref{tab:hw} and summarised graphically in Fig.~\ref{fig:hw-gain}. The submitted instance is not a separately re-optimized seed. It is the converged endpoint of the same per-pair optimization that yields the simulator ansatz, and its parameter trajectory self-prunes within the run: two pairs carry a single dominant Pauli term and transpile to two entangling gates rather than three, leaving 19 of 21 two-qubit gates after transpilation onto the heavy-hex path, while one entangling pair collapses to a $\rho$-sum of $\sim\!4\times10^{-4}$ and still emits a full three-gate block, which is the scale invariance of Proposition~\ref{prop:scalefree} appearing in a compiled circuit: near-zero intensity is not a shallower circuit. No pairs are excised post hoc and no independent 19-gate optimization was performed. The submitted instance's noiseless one-way fidelity ($0.5662$) is a single optimization endpoint, not an ensemble average, and it is not a depth effect: the 19-gate compilation reproduces the 21-gate unitary to gate-synthesis precision, so the count reduction neither gains nor costs fidelity, in line with the finding of \S\ref{sec:pruning} that no headline result is attributable to a depth reduction.
+
+Relative to the same-day, same-path untuned baseline ($0.0478\pm0.0034$), the mean TOPAZ raw echo is a $6.031\times$ gain ($z\approx6.1$, $p<10^{-7}$); against the MMA-optimized product baseline ($0.1008\pm0.0048$) it is $2.86\times$ ($z\approx4.7$). Neither comparison is confounded by unequal representational capability: under noiseless evaluation the same ratios appear in one-way fidelity, $0.5662$ against $0.0758$ and $0.1768$, i.e.\ $7.47\times$ and $3.20\times$. Retention through the round trip is comparable across all three circuits ($50.9\%$, $63.1\%$, $57.0\%$), so the raw-echo improvement is attributable to representation rather than to a hidden advantage of a shallower circuit.
+
+Standard ZNE is \emph{inconsistent} on this protocol: across the three sessions the extrapolated echo ranges from below the raw echo ($0.2058$ versus $0.2443$) to above it ($0.3968$ versus $0.3200$). Tensor-product noise-model correction, which models the round-trip channel as a tensor product of per-gate depolarizing channels, behaves more stably ($0.2919$, $0.3159$, $0.3200$), tracking the raw echo across sessions. TOPAZ delivers its gain before noise accumulates, on the circuit itself, so pre-execution design is complementary to extrapolation-based post-processing and, on this protocol, more reliable than it.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig6_hw_gain.png}
+\caption{Live \ibmfez{} target-echo (inversion test): TOPAZ raw echo versus the two product-Trotter baselines and standard ZNE.}
+\label{fig:hw-gain}
+\end{figure}
+
+We bound this result carefully. The experiment covers one device path over a single overnight window with three same-day replications; the reproducible cross-seed claim is the structural well of \S\ref{sec:well}, and the hardware numbers are presented for consistency with that picture rather than as a generality claim.
+
+\subsection{Scaling to 16 qubits}
+\label{sec:16q}
+
+To measure the noise-limited ceiling beyond 8 qubits we ran the full pipeline on \ibmfez{} for a 16-qubit nearest-neighbour chain [112, 113, 131, 132, 133, 114, 115, 129, 130, 117, 116, 145, 146, 109, 110, 111] using the \emph{per-pair} mode (90 parameters). The optimizer improves the simulated return probability from $0.0003$ to $0.1151$, a $383\times$ gain from the classical search alone. The search is not what fails at this size. The number that the device returns is far smaller, an unmitigated echo of $0.0065$ against $0.2883$ at 8 qubits; the gap between the simulated $11.5\%$ and the measured $0.65\%$ is the noise the ceiling accounts for, not a quantity the optimizer could recover. \emph{A note on reading this number:} the simulator return probability and the hardware echo are different quantities measured by different means, so the like-for-like comparison is the echo-to-echo one. The simulated return probability should not be set against the noiseless one-way figures of $56.6\%$ at 8 qubits and $11.5\%$ at 16, which are a different measurement again. We do not attribute the shortfall to representability; the noiseless scaling measurements of \S\ref{sec:scaling-meas} find the LPTE gradient variance decaying \emph{more slowly} with $N$ than either baseline, so over the range tested the optimization landscape is not the resource that runs out.
+
+The unmitigated target-echo is $0.0065$; TPNM correction gives $0.0103$; ZNE (standard unitary folding, SF$=1,3$, single batched job) gives $0.0120$. The retention fraction is $5.6\%$, well below the $\sim\!51\%$ observed at 8 qubits. A separate ZNE-only run using the standard IBM unitary-folding protocol (SF$=1,3,5$, Richardson extrapolation) yielded folds $0.00475/0.00625/0.0030$ (non-monotonic, the same inconsistency signature seen at 8 qubits) and a Richardson fit extrapolating to $0.001497$, which when clipped to the noiseless bound gives $0.002219$, collapsing below the raw echo. ZNE's instability on these deep round-trip circuits is therefore structural rather than an implementation artifact: gate stretching pushes the circuit beyond the coherence window, and extrapolation frequently produces a result at or below the unmitigated measurement.
+
+\subsection{Scaling measurements: gradient variance and the closed algebra}
+\label{sec:scaling-meas}
+
+To separate trainability from the noise-limited experiments above, we measured two noiseless, statevector scalings directly, without the TOPAZ pipeline, on random instances of three parametrizations. Both are pure measurements; no asymptotic classification is attached to either.
+
+The first is the variance, over parameters at fixed random initialization, of the first-order central finite difference of the state-preparation fidelity $F=|\langle\psi_{\mathrm{target}}|\psi\rangle|^2$ at step $10^{-4}$, for LPTE chains, product-PTE chains of identical pair structure, and a hardware-efficient ansatz of RY+CNOT layers on the same linear chain. Ten random initializations are used at each $N\in\{4,6,\dots,16\}$; LPTE and product PTE share an exact parameter count of six per pair, while the HEA carries its native two single-qubit rotations per layer and so a nearby, not identical, count. Figure~\ref{fig:gradvar} shows the result: on a $\log_2$ scale the decay is linear in $N$ for all three, with the LPTE chain decaying most slowly.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig8_gradvar.png}
+\caption{Noiseless scaling of fidelity-gradient variance versus system size for LPTE (solid), product PTE (dashed), and a hardware-efficient ansatz (dotted), $\log_2$ scale, ten random initializations per point. Lines are least-squares fits with slopes $-1.55$ (LPTE), $-2.29$ (product), and $-1.96$ (HEA), all $R^2\ge0.99$.}
+\label{fig:gradvar}
+\end{figure}
+
+Least-squares slopes (95\% CI) are $-1.5466\pm0.0791$ (LPTE), $-2.2905\pm0.2000$ (product), and $-1.9627\pm0.1078$ (HEA), all $R^2\ge0.99$. At $N=16$ the $\log_2$ variances are $-21.75$, $-36.08$, and $-33.53$---an approximately $2.0\times10^{4}$ gap between LPTE and product PTE and $3.5\times10^{3}$ over the HEA, in raw variance of the fidelity gradient. Equivalently, each added qubit attenuates the LPTE gradient variance by $2^{-1.55}\approx0.34$, against $2^{-2.29}\approx0.20$ for product PTE and $2^{-1.96}\approx0.26$ for the HEA.
+
+The second measurement completes the finite-depth characterization of \S\ref{sec:invariants}: the dimension of the Lie closure generated by the LPTE tangent-space generators at the identity. The generators are the per-block $\{XX,YY,ZZ\}$ triples of the $N-1$ nearest-neighbour blocks. We computed the exact Lie closure by breadth-first commutator enumeration over Pauli-word bases (vectorized over all $4^{N}$ strings for $N\le8$), and cross-checked each closed result against the exact matrix-based Lie span for small $N$. The resulting dimensions are given in Table~\ref{tab:lcc}.
+
+\begin{table}[htbp]
+\centering
+\caption{Measured dimension $\dim\mathfrak{l}$ of the Lie closure of the $3(N-1)$ per-pair generators of the LPTE chain, compared with $\dim\mathfrak{su}(2^{N})=4^{N}-1$. Rows $N\le8$ are exact (enumeration completed).}
+\label{tab:lcc}
+\resizebox{\columnwidth}{!}{\begin{tabular}{lrrr}
+\toprule
+$N$ & $\dim\mathfrak{l}$ & $\dim\mathfrak{su}(2^{N})$ & $\dim\mathfrak{l}/\dim\mathfrak{su}$ \\
+\midrule
+4 & 60    & 255    & 0.2353 \\
+5 & 255   & 1023   & 0.2493 \\
+6 & 1020  & 4095   & 0.2491 \\
+7 & 4095  & 16383  & 0.2500 \\
+8 & 16380 & 65535  & 0.2499 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Across $N=4$ through $8$ the closure dimension follows $\dim\mathfrak{l}=4^{N-1}-1$ for odd $N$ and $4^{N-1}-4$ for even $N$; for large $N$ these are $[4^{N}-1]/4-3/4$ and $[4^{N}-1]/4-15/4$, i.e.\ one quarter of the full $\mathfrak{su}(2^{N})$ dimension up to a parity-dependent constant term. The structural reading is a bipartite sector effect: on odd $N$ the closure is dimensionally equal to $\mathfrak{su}(2^{N-1})$, while on even $N$ it falls three dimensions short. This parity signature is consistent with the chain's even-odd sublattice splitting, but we report the closed forms as data rather than derive them as a theorem. The fraction $\dim\mathfrak{l}/\dim\mathfrak{su}$ is $0.235$ at $N=4$ and converges toward $0.2499$ by $N=8$. For $N=9$ to $12$ the commutator budget capped the enumeration, yielding lower bounds ($65475$ at $N=9$, or $0.250$ of the ambient dimension) that we report as bounds only. One quarter of the full algebra is still exponentially large in $N$, so the measurement is neutral on whether block-restricted growth delays saturation; consistent with \S\ref{sec:invariants}, we attach no barren-plateau conclusion to it.% ============================================================
+\section{Two ceilings}
+\label{sec:ceilings}
+% ============================================================
+
+The two sets of scaling measurements in this paper point in opposite directions, and we report them side by side because separating them is more informative than either alone.
+
+\begin{itemize}
+\item \textbf{The optimization landscape degrades slowly.} Across $N=4$ to $16$, the LPTE fidelity-gradient variance decays with fitted slope $-1.55$ against $-2.29$ for product PTE and $-1.96$ for the hardware-efficient ansatz, all $R^2\ge0.99$, with the gap \emph{widening} in $N$ (Fig.~\ref{fig:gradvar}). Equivalently, each added qubit attenuates LPTE's gradient variance by only $0.34$ against $0.20$ and $0.26$.
+\item \textbf{The noise-limited ceiling degrades sharply.} Measured echo fidelity falls from $28.8\%$ at 8 qubits to $0.65\%$ at 16 on the same device, a $44\times$ drop, with the standard-ZNE failure mode appearing alongside it (\S\ref{sec:16q}). At 16 qubits the optimizer still improves the simulator return probability by $383\times$ from random initialization, which identifies the shortfall as the device ceiling rather than the search. The noiseless one-way figures for the same circuits are $56.6\%$ and $11.5\%$, and the gap between those and the echoes is the noise the ceiling accounts for.
+\end{itemize}
+
+Both halves are collected in Table~\ref{tab:ceilings}. We assert no crossover between them. Two noise-limited points bound none, and locating the size at which the falling ceiling overtakes the more slowly decaying landscape requires noise-aware iteration on the device rather than in simulation. What survives this paper is the identification of \emph{which resource is binding at each size}: below 8 qubits the landscape is the interesting object and TOPAZ's advantage is real; by 16 qubits the device ceiling dominates and no search-side method, ours or anyone's, is the binding constraint.
+
+\begin{table}[htbp]
+\centering
+\caption{The two ceilings, side by side. The landscape ceiling is the noiseless fidelity-gradient variance fitted across $N=4$ to $16$; the hardware ceiling is \emph{measured echo fidelity} on the same device over the same size range. The noiseless one-way figures are listed separately at the foot of the table and are not hardware echoes; they bound what the same circuits achieve without noise and are not comparable to the rows above them. Neither ceiling dominates the other over the range measured, and two noise-limited points bound no crossover.}
+\label{tab:ceilings}
+\resizebox{\columnwidth}{!}{\begin{tabular}{lccc}
+\toprule
+\textbf{Ceiling} & \textbf{LPTE / TOPAZ} & \textbf{Baselines} & \textbf{Evidence} \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Landscape (noiseless simulation)}}\\
+\ \ Gradient-variance slope in $N$ & $-1.55$ & $-2.29$ (product) & Fig.~\ref{fig:gradvar} \\
+\ \ Fit quality $R^2$                  & $\ge0.99$ & $\ge0.99$ & Fig.~\ref{fig:gradvar} \\
+\ \ Per-added-qubit attenuation          & $0.34$ & $0.20$, $0.26$ & \S\ref{sec:scaling-meas} \\
+\ \ Direction of gap vs.\ baseline      & \multicolumn{2}{c}{widening in $N$} & \S\ref{sec:scaling-meas} \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Hardware echo (IBM Heron r2, same device)}}\\
+\ \ Echo, $N=8$ (TOPAZ, mean of 3)   & \textbf{$0.2883$} & $0.1008$, $0.0478$ & \S\ref{sec:hardware} \\
+\ \ Echo, $N=16$ (unmitigated)       & $0.0065$ & --- & \S\ref{sec:16q} \\
+\ \ Echo, $N=16$ (best mitigation)   & $0.0120$ & --- & \S\ref{sec:16q} \\
+\ \ Echo drop $8\!\to\!16$ qubits     & \multicolumn{2}{c}{$44\times$} & \S\ref{sec:16q} \\
+\ \ ZNE behaviour at $N=16$          & inconsistent & requires clamping & \S\ref{sec:16q} \\
+\ \ Simulator return prob., $N=16$   & $0.1151$ & --- & \S\ref{sec:16q} \\
+\ \ Optimizer gain over random init. & $383\times$ & --- & \S\ref{sec:16q} \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Noiseless one-way (simulation, for reference only)}}\\
+\ \ One-way fidelity, $N=8$          & $0.5662$ & $0.1768$, $0.0758$ & \S\ref{sec:hardware} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+% ============================================================
+
+\subsection{Scope}
+
+The structural results, Propositions~\ref{prop:removal-cost} and~\ref{prop:scalefree}, are independent of chain length and noise model; the LPTE-specific measurements that follow are chain-specific by construction. All headline circuits are 8 qubits on a linear chain: a deliberate first demonstration, since the quietest path of the Heron r2 device is itself a nearest-neighbour chain and linear chains are the unit cells from which heavy-hex topologies are assembled. The pruning threshold $\tau_\kappa=0.05$ is a heuristic choice and is inactive at the operating point used here; \S\ref{sec:pruning} locates where it activates and what it costs. The residual open question is not the threshold's value: Proposition~\ref{prop:scalefree} shows the threshold cannot be the right criterion at all, because suppressing intensities leaves every $U_p$ and therefore the entire circuit unchanged. The criterion that does license a deletion is $\norm{U_p-\mathbb{I}}_2$ in Proposition~\ref{prop:removal-cost}, and reaching it requires the identity-anchored block of Eq.~\eqref{eq:identity-anchored}, which we specify and hold out of this study so that every reported number comes from one registered parametrization. Local convexity is measured at the discovered optimum rather than proved for the ansatz (Proposition~\ref{prop:convexity}). The invariance argument for unital channels is exact; for Heron-class noise it is supported by the transfer measurement of \S\ref{sec:transfer} rather than derived. The hardware result covers one device path over one overnight window with three same-day replications; the 16-qubit experiment was run on a separate day. Reproducibility across calibration sessions and hardware revisions is not yet established.
+
+\subsection{TOPAZ is a passive protocol, not a competitor to post-processing}
+
+ZNE, CDR, and virtual distillation act on measurement statistics after the circuit runs; TOPAZ moves density variables before execution. The two are complementary rather than competitive, and the composition is where the structural advantage becomes visible: the shallow topology keeps the noise-energy relationship that extrapolation requires, so stacking improves the post-processor's reliability rather than merely adding a constant. The matched-budget result of \S\ref{sec:vqe-matched} makes the same point from the other side---the hardware-efficient ansatz matches or beats LPTE on raw energy, yet its deeper circuits force clamping on 7 of 10 seeds while the shallow topology requires none on 10 of 10. A passive protocol that leaves downstream methods valid is a different kind of contribution from one that outperforms them, and we claim only the former.
+
+\subsection{Relation to adaptive circuit-topology methods}
+
+The idea that topology itself should be optimized rather than fixed at ansatz construction has several near-term antecedents. Table~\ref{tab:prior} places TOPAZ against them on three axes: whether edge presence is relaxed to a real-valued intensity, whether a prune stage exists, and whether the objective is noise-aware.
+
+\begin{table}[htbp]
+\centering
+\caption{Positioning TOPAZ against prior approaches that adapt circuit structure. ``Continuous'': edge presence is relaxed to a real-valued intensity during optimization. ``Prune stage'': unused operators or edges are removed at some point in the pipeline.}
+\label{tab:prior}
+\resizebox{\columnwidth}{!}{\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Selection} & \textbf{Continuous} & \textbf{Prune stage} & \textbf{Noise-aware} \\
+\midrule
+ADAPT-VQE~\cite{Grimsley2019}  & grow, max-gradient pool & no & no & no \\
+Qubit-ADAPT-VQE~\cite{Tang2021}  & grow, max-gradient Pauli pool & no & no & no \\
+Pruned-ADAPT-VQE~\cite{PAdV2025}  & grow $+$ amplitude removal & no & yes (post-hoc) & no \\
+Plateau-operator elimination~\cite{PoE2026}  & grow $+$ operator removal & no & yes (in-pool) & no \\
+TopGen~\cite{TopGen2022}  & discrete bottom-up search & no & yes (sub-circuit merge) & no \\
+\textbf{TOPAZ} (this work)  & continuous density $+$ polar projection & \textbf{yes} & yes (pre-compile, $\tau_\kappa$) & \textbf{yes} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+ADAPT-VQE and its variants \emph{grow} an ansatz by greedily appending the highest-gradient operator from a pool; Pruned-ADAPT-VQE and plateau-aware operator elimination add a discrete removal stage, either post-hoc or in-pool; TopGen generates topologies bottom-up through a discrete search over a circuit library. All of these are discrete in the structural variable, so an operator or edge is either there or not there at every step, and no gradient flows during removal. TOPAZ differs on the axis this paper is about: the density is real-valued throughout, so the objective's differential remains informative while an edge's presence is still in question. We are careful about how much this is worth: the prune stage exists and is measurable (\S\ref{sec:pruning}), but it does not fire at the registered threshold in our runs, so the operational difference from the adaptive-VQE family today is continuity of the structural variable rather than realized gate reduction.
+
+\subsection{Where this might be going}
+
+It is too early to call topology optimization of circuits a paradigm shift, and we would rather say precisely what would have to be true. The claim would be supported if three things held at scale: that the relaxed design domain of \S\ref{sec:invariants} remains well behaved as the connectivity graph stops being a chain, that the identity-anchored or per-pair-normalized block makes removal routine rather than exceptional, and that the passive-protocol advantage of \S\ref{sec:discussion} survives on hardware where the ceiling of \S\ref{sec:ceilings} is not yet the binding constraint. None of the three is established here, and the second is the most immediate piece of unfinished work. If the topology-optimization direction does become a paradigm for circuit design, it will be because these hold and not because a continuous relaxation is by construction the right way to relax.
+
+Four concrete directions follow.
+
+\begin{itemize}
+\item \textbf{Identity-anchored intensity parametrization.} Implement the identity-anchored block of Eq.~\eqref{eq:identity-anchored} and determine whether removal becomes routine at a fixed criterion rather than exceptional at a tuned one. Proposition~\ref{prop:scalefree} shows per-pair normalization alone cannot do this, so the anchor is the specific next step rather than one option among several. This is the highest-value next step and it is not speculative: the measurement in \S\ref{sec:pruning} and the two propositions in \S\ref{sec:sparsification} already localize exactly what is blocking it.
+\item \textbf{Scalability by hardware shielding, as a heuristic.} The 16-qubit experiment is limited by simulation cost, and dense density-matrix simulation scales exponentially. Treating the un-modelled qubits as spectators whose channels can be absorbed into per-pair noise factors is a defensible approximation and would extend the reachable range, but we label it a heuristic: it is not exact, and its error would need to be measured against full simulation rather than assumed small.
+\item \textbf{Beyond the linear chain.} Two noise-limited points bound nothing about heavy-hex, modular, or all-to-all connectivity. Every invariant of \S\ref{sec:invariants} was proved for a chain but none of the proofs depends on the chain topology, so the extension is a matter of the block set rather than the theory.
+\item \textbf{Composition with ansatz families and QEM stacks.} TOPAZ hosts ans\"atze other than LPTE---hardware-efficient forms, the Hamiltonian variational ansatz, ADAPT-VQE pools---and the passive-protocol argument predicts that shallow optimized topologies keep post-processing valid across all of them. Running ZNE, CDR, and VD simultaneously rather than individually would quantify whether their gains are additive, sub-additive, or synergistic.
+\end{itemize}
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ============================================================
+
+We have taken the direction classical structural optimization opened---keep the structural description continuous, and let the optimizer decide what to remove---and applied it to quantum circuit design. TOPAZ relaxes each entangling pair's density $\kappa(p)$ to a real-valued design variable, retracts the relaxed block onto the unitary group by polar projection, and lets a dual-MMA optimizer move intensity and timing concurrently.
+
+The domain of that relaxation has four provable properties. Compactness and attainment hold together on the closed subdomain $\mathcal{X}_{\delta,\eta}$ that carries both the optimizer's weight floor and a non-singularity margin; connectedness holds on the box itself; continuity follows from the chain of continuous maps from weights through blocks and polar projection to the loss, on the non-singular locus; and local convexity follows from the positive semidefinite contribution of the regularizer, with strictness measured rather than proved. The structural statements are two propositions, and the second is the one that constrains the design. Proposition~\ref{prop:removal-cost} bounds the cost of deleting an edge by $2\norm{U_p-\mathbb{I}}_2+\norm{U_p-\mathbb{I}}_2^2$, so an edge whose unitary is the identity can be removed cheaply---a sufficient condition, stated as one. Proposition~\ref{prop:scalefree} then says the polar factor discards the magnitude of $B_p$, so no intensity threshold can reach that condition and the identity-anchored block is the change that can. We kept these separate from the thresholded rule, measured the rule directly, and report that it is reachable but inactive at $\tau_\kappa=0.05$---all seven edges survive, pruning first appears at $0.10$, and the chain collapses by $0.20$ at a steep fidelity cost---which is now explained rather than merely observed: the rule tests a quantity that Proposition~\ref{prop:scalefree} proves is uncoupled from whether an edge matters.
+
+What is reproducible is the optimization landscape, not a compiled-circuit saving. The structural well is seed-distinct (49 of 50 seeds reach a distinct suppression pattern), noise-transferable ($\eta=0.9943$ across six noise models), and reached at $0.737\pm0.066$ over ten seeds against $0.279$ for PPTE and $0.329$ for a hardware-efficient ansatz at $42$ versus $\sim\!96$ parameters. The mechanism is the retraction: removing it halves the fidelity, and nothing else in the stack comes close.
+
+On a matched-budget variational benchmark a hardware-efficient ansatz reaches equal or lower energies, and we report that plainly. The advantage that survives is structural rather than energetic: shallow topologies keep error-mitigation post-processing physically valid on 10/10 seeds where the deeper form requires clamping on 7/10. On hardware, the optimized circuit reaches a target-echo of $0.2883\pm3.94\%$ against $0.0478\pm0.34\%$ untuned and $0.1008\pm0.48\%$ optimized product baselines on a single quiet path. And the two ceilings---a gradient-variance slope of $-1.55$ degrading more slowly than either baseline with the gap widening, against an achievable fidelity falling from $56.6\%$ to $11.5\%$---are reported without a claimed crossover, because two noise-limited points bound none.
+
+The honest summary is that relaxation buys search, and what the search finds is a sparsity pattern and a level. Reporting that pattern as the result---rather than as a gate count our own measurements do not support---is the claim we are making, and the topology-optimization direction is where we think the next useful work lies; \S\ref{sec:discussion} states that program as four concrete next steps.
+
+\section*{Acknowledgements}
+We thank Sreekuttan L S, Nikhil Londhe, and Grishma Prasad at Bloq Quantum for their technical critiques and feedback across multiple iterations of this work. \emph{Personal acknowledgement:} the author also thanks the faculty at The Shishukunj International School, Jhalaria, for their early encouragement and support. This work received no external funding.
+
+\section*{Author contributions}
+K.K.\ conceived the study, developed the TOPAZ framework and the parametric Trotter expression family, designed and ran the simulations and hardware experiments, and wrote the manuscript.
+
+\section*{Correspondence}
+Correspondence and requests for materials should be addressed to Krishanu Karun, \texttt{krishanukarun@gmail.com}.
+
+\section*{Competing interests}
+The author declares no competing interests. The author holds a junior-researcher position at Bloq Quantum; this affiliation played no role in the design, execution, or reporting of the work.
+
+\section*{Data availability}
+Code, data, and analysis scripts for the results reported here are released with the $\mathsf{TOPAZ}$ repository, tagged \texttt{v1.0} and archived in a DOI-pinned Zenodo deposit~\cite{TopazV1}. The multi-seed ensembles, threshold sweep, matched-budget re-evaluation, and hardware session aggregates underlying the tables and figures of this paper are archived with that deposit, as are the per-seed parameters behind Figs.~\ref{fig:wells-sparsity} and \ref{fig:hessian}.
+
+\section*{Code availability}
+The optimization engine, Kraus contraction routines, and experiment drivers are released as open-source Python under the $\mathsf{TOPAZ}$ repository~\cite{TopazV1}.
+
+\begin{thebibliography}{36}
+
+\bibitem{Preskill2018} J. Preskill, \textit{Quantum Computing in the NISQ era and beyond}, Quantum \textbf{2}, 79 (2018). \href{https://doi.org/10.22331/q-2018-08-06-79}{doi:10.22331/q-2018-08-06-79}.
+\bibitem{Kim2023} Y. Kim \textit{et al.}, \textit{Evidence for the utility of quantum computing before fault tolerance}, Nature \textbf{618}, 500 (2023). \href{https://doi.org/10.1038/s41586-023-06096-3}{doi:10.1038/s41586-023-06096-3}.
+\bibitem{Temme2017} K. Temme, S. Bravyi, and J. M. Gambetta, \textit{Error mitigation for short-depth quantum circuits}, Phys. Rev. Lett. \textbf{119}, 180509 (2017). \href{https://doi.org/10.1103/PhysRevLett.119.180509}{doi:10.1103/PhysRevLett.119.180509}.
+\bibitem{Czarnik2021} P. Czarnik \textit{et al.}, \textit{Error mitigation with Clifford quantum-circuit data}, Quantum \textbf{5}, 592 (2021). \href{https://doi.org/10.22331/q-2021-11-26-592}{doi:10.22331/q-2021-11-26-592}.
+\bibitem{Huggins2021} W. J. Huggins \textit{et al.}, \textit{Virtual distillation for quantum error mitigation}, Phys. Rev. X \textbf{11}, 041036 (2021). \href{https://doi.org/10.1103/PhysRevX.11.041036}{doi:10.1103/PhysRevX.11.041036}.
+\bibitem{Svanberg1987} K. Svanberg, \textit{The method of moving asymptotes---a new method for structural optimization}, Int. J. Numer. Methods Eng. \textbf{24}, 359 (1987). \href{https://doi.org/10.1002/nme.1620240207}{doi:10.1002/nme.1620240207}.
+\bibitem{Boyd2004} S. Boyd and L. Vandenberghe, \textit{Convex Optimization}, Cambridge University Press (2004).
+\bibitem{Golub2013} G. H. Golub and C. F. Van Loan, \textit{Matrix Computations}, 4th ed., Johns Hopkins University Press (2013).
+\bibitem{Sim2019} S. Sim, P. D. Johnson, and A. Aspuru-Guzik, \textit{Expressibility and entangling capability of parameterized quantum circuits for hybrid quantum-classical algorithms}, Adv. Quantum Technol. \textbf{2}, 1900070 (2019). \href{https://doi.org/10.1002/qute.201900070}{doi:10.1002/qute.201900070}.
+\bibitem{Holmes2022} Z. Holmes \textit{et al.}, \textit{Connecting ansatz expressibility to gradient magnitudes and barren plateaus}, PRX Quantum \textbf{3}, 010313 (2022). \href{https://doi.org/10.1103/PRXQuantum.3.010313}{doi:10.1103/PRXQuantum.3.010313}.
+\bibitem{Kraus1983} K. Kraus, \textit{States, Effects, and Operations}, Springer (1983).
+\bibitem{McKay2020} D. C. McKay \textit{et al.}, \textit{Qiskit backend specifications for OpenQASM and OpenPulse experiments}, arXiv:1809.03452 (2018).
+\bibitem{IBMHeron2024} IBM, \textit{The IBM Heron quantum processor}, IBM Research Blog (2024).
+\bibitem{Childs2021} A. M. Childs \textit{et al.}, \textit{Theory of Trotter error with commutator scaling}, Phys. Rev. X \textbf{11}, 011020 (2021). \href{https://doi.org/10.1103/PhysRevX.11.011020}{doi:10.1103/PhysRevX.11.011020}.
+\bibitem{Fuchs1999} C. A. Fuchs and J. van de Graaf, \textit{Cryptographic distinguishability measures for quantum-mechanical states}, IEEE Trans. Inf. Theory \textbf{45}, 1216 (1999). \href{https://doi.org/10.1109/18.761271}{doi:10.1109/18.761271}.
+\bibitem{TopazV1} K. Karun, \textit{TOPAZ: Topology OPtimization Ansatze with correlated Zoning}, Zenodo (2026). \href{https://doi.org/10.5281/zenodo.19214449}{doi:10.5281/zenodo.19214449}.
+\bibitem{Kandala2017} A. Kandala \textit{et al.}, \textit{Hardware-efficient variational quantum eigensolver for small molecules and quantum magnets}, Nature \textbf{549}, 242 (2017). \href{https://doi.org/10.1038/nature23879}{doi:10.1038/nature23879}.
+\bibitem{Wiersema2020} R. Wiersema \textit{et al.}, \textit{Exploring entanglement and optimization within the Hamiltonian Variational Ansatz}, PRX Quantum \textbf{1}, 020319 (2020). \href{https://doi.org/10.1103/PRXQuantum.1.020319}{doi:10.1103/PRXQuantum.1.020319}.
+\bibitem{Grimsley2019} H. G. Grimsley \textit{et al.}, \textit{An adaptive variational algorithm for exact molecular simulations on a quantum computer}, Nat. Commun. \textbf{10}, 3007 (2019). \href{https://doi.org/10.1038/s41467-019-10988-2}{doi:10.1038/s41467-019-10988-2}.
+\bibitem{Kandala2019} A. Kandala \textit{et al.}, \textit{Error mitigation extends the computational reach of a noisy quantum processor}, Nature \textbf{567}, 491 (2019). \href{https://doi.org/10.1038/s41586-019-1040-7}{doi:10.1038/s41586-019-1040-7}.
+
+\bibitem{Tang2021} H. L. Tang \textit{et al.}, \textit{Qubit-ADAPT-VQE: an adaptive algorithm for constructing hardware-efficient ans\"atze on a quantum processor}, PRX Quantum \textbf{2}, 020310 (2021). \href{https://doi.org/10.1103/PRXQuantum.2.020310}{doi:10.1103/PRXQuantum.2.020310}.
+\bibitem{PAdV2025} N. Vaquero-Sabater, A. Carreras, and D. Casanova, \textit{Pruned-ADAPT-VQE: compacting molecular ans\"atze by removing irrelevant operators}, arXiv:2504.04652 (2025).
+\bibitem{PoE2026} P. M. Vo, T. C. N. Vu, T. N. Tran, H. T. Nguyen, and L. N. Tran, \textit{Reducing quantum resources for ADAPT-VQE via plateau-operator elimination and correlated mean-field downfolding}, arXiv:2607.00575 (2026).
+\bibitem{TopGen2022} J. Cheng \textit{et al.}, \textit{TopGen: topology-aware bottom-up generator for variational quantum circuits}, arXiv:2210.08190 (2022).
+
+\end{thebibliography}
+
+\end{document}
